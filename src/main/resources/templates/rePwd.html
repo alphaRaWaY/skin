@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重置密码</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            max-width: 100%;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        input[type="password"]:focus {
+            border-color: #27ae60;
+            outline: none;
+        }
+
+        .warning {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2ecc71;
+        }
+
+        .success-message {
+            color: #27ae60;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 th:text="${username}+重置密码"></h2>
+    <div class="form-group">
+        <label for="newPassword">新密码</label>
+        <input type="password" id="newPassword" placeholder="请输入新密码" />
+        <div id="newPasswordWarning" class="warning"></div>
+    </div>
+
+    <div class="form-group">
+        <label for="confirmPassword">确认密码</label>
+        <input type="password" id="confirmPassword" placeholder="请确认新密码" />
+        <div id="confirmPasswordWarning" class="warning"></div>
+    </div>
+
+    <button id="submitBtn">提交</button>
+    <div class="success-message" id="successMessage"></div>
+</div>
+
+<script>
+    // 获取表单元素
+    const newPasswordInput = document.getElementById('newPassword');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const submitButton = document.getElementById('submitBtn');
+    const newPasswordWarning = document.getElementById('newPasswordWarning');
+    const confirmPasswordWarning = document.getElementById('confirmPasswordWarning');
+    const successMessage = document.getElementById('successMessage');
+
+    // 新密码验证
+    newPasswordInput.addEventListener('input', () => {
+        const newPassword = newPasswordInput.value;
+        if (newPassword.length < 6 || newPassword.length > 20) {
+            newPasswordWarning.textContent = '密码长度必须在6-20个字符之间';
+        } else {
+            newPasswordWarning.textContent = '';
+        }
+    });
+
+    // 重复密码验证
+    confirmPasswordInput.addEventListener('input', () => {
+        const confirmPassword = confirmPasswordInput.value;
+        const newPassword = newPasswordInput.value;
+        if (confirmPassword !== newPassword) {
+            confirmPasswordWarning.textContent = '两次输入的密码不一致';
+        } else {
+            confirmPasswordWarning.textContent = '';
+        }
+    });
+
+    // 提交按钮点击事件
+    submitButton.addEventListener('click', () => {
+        const newPassword = newPasswordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+
+        // 前端验证
+        if (newPassword.length < 6 || newPassword.length > 20) {
+            newPasswordWarning.textContent = '密码长度必须在6-20个字符之间';
+            return;
+        }
+        if (confirmPassword !== newPassword) {
+            confirmPasswordWarning.textContent = '两次输入的密码不一致';
+            return;
+        }
+
+        // 获取 token 和用户名
+        const username = new URLSearchParams(window.location.search).get('username'); // 从 URL 获取用户名
+
+        // 请求数据
+        const requestData = {
+            password: newPassword,
+            username: username,
+        };
+
+        // 发送异步请求
+        fetch('/api/account/rePwd', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 0) {
+                    successMessage.textContent = '密码重置成功！正在跳转...';
+                    setTimeout(() => {
+                        window.location.href = '/api/rePassword/success';  // 跳转到成功页面
+                    }, 2000);
+                } else {
+                    successMessage.textContent = '密码重置失败，请重试。';
+                }
+            })
+            .catch(error => {
+                console.error('请求失败', error);
+                successMessage.textContent = '网络错误，请重试。';
+            });
+    });
+</script>
+</body>
+</html>
