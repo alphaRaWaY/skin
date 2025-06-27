@@ -32,10 +32,10 @@ build/
 
 ### VS Code ###
 .vscode/
+application.properties
+
+src/main/resources/application.yml
 
 #配置文件
 application.yml
 application.yaml
-application.properties
-
-src/main/resources/application.yml
