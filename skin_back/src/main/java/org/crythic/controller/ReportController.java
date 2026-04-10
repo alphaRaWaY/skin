@@ -5,6 +5,7 @@ import org.crythic.pojo.report.Report;
 import org.crythic.services.DeepSeekService;
 import org.crythic.services.ReportService;
 import org.crythic.utils.ReportAnalyzer;
+import org.crythic.utils.TestAnalyzer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,9 +51,10 @@ public class ReportController {
     @PostMapping("/analys")
     public Result<Report> getAllReports(@RequestBody Report report) {
         System.out.println(report);
-        Report report1 = ReportAnalyzer.analyzeReport(report);
-        String advice = deepSeekService.getChat("以下是一个新的患者的疾病类型，请返回一个简短的建议，请不要使用markdown语法，而是使用简单的字符串："+report1.toString(),"自动问诊记录");
-        String introduction = deepSeekService.getChat("以下是一个新的患者的疾病类型，请返回一个他的疾病的简单介绍，请不要使用markdown语法，而是使用简单的字符串"+report1.toString(),"自动问诊记录");
+//        Report report1 = ReportAnalyzer.analyzeReport(report);
+        Report report1 = TestAnalyzer.analyzeReport(report);
+        String advice = deepSeekService.getAdvice("以下是一个患者的疾病类型，请返回一个简短的建议，请不要使用markdown语法，而是使用简单的字符串："+report1.toString());
+        String introduction = deepSeekService.getAdvice("以下是一个患者的疾病类型，请返回一个他的疾病的简单介绍，请不要使用markdown语法，而是使用简单的字符串"+report1.toString());
         report1.setAdvice(advice);
         report1.setIntroduction(introduction);
         return Result.success(report1);

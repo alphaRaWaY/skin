@@ -8,6 +8,7 @@ import org.crythic.pojo.UserChatSession;
 import org.crythic.utils.ThreadLocalUtil;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -16,16 +17,32 @@ import java.util.Map;
 
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 
-@RequiredArgsConstructor
 @Service
 public class DeepSeekService {
     private final Integer MAXN = 100;
-    @Autowired
-    UserChatSessionMapper userChatSessionMapper;
-    @Autowired
-    ChatMessageMapper chatMessageMapper;
-
+    private final UserChatSessionMapper userChatSessionMapper;
+    private final ChatMessageMapper chatMessageMapper;
+    //用于AI问诊的对象
     private final ChatClient client;
+    private final ChatClient adviceClient;
+
+    public DeepSeekService(ChatClient chatClient,
+                           @Qualifier("statelessChatClient") ChatClient statelessChatClient, // 通过 @Qualifier 明确注入无状态客户端
+                           UserChatSessionMapper userChatSessionMapper,
+                           ChatMessageMapper chatMessageMapper) {
+        this.client = chatClient;
+        this.adviceClient = statelessChatClient;
+        this.userChatSessionMapper = userChatSessionMapper;
+        this.chatMessageMapper = chatMessageMapper;
+    }
+
+
+    public String getAdvice(String prompt) {
+        return adviceClient.prompt()
+                .user(prompt)
+                .call()
+                .content();
+    }
 
     public String getChat(String prompt, String chatId) {
         Map<String,Object> map = ThreadLocalUtil.get();

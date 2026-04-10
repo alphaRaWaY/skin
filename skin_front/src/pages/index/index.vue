@@ -4,7 +4,7 @@ import { useReportStore } from '@/stores/modules/reportStore'
 import CustomerNavbar from './components/CustomerNavbar.vue'
 import type { responseFamily } from '@/types/family'
 import { getFamily } from '@/services/familyService'
-
+import { onPullDownRefresh } from '@dcloudio/uni-app'
 const store = useReportStore()
 
 // 表单数据
@@ -17,6 +17,15 @@ const form = ref({
   treatment: '',
   other: ''
 })
+
+// 监听下拉刷新事件
+onPullDownRefresh(() => {
+  console.log('触发下拉刷新')
+  // 清空之前选中的家人，并重新获取列表
+  selectedFamilyId.value = null;
+  fetchFamilyList()
+})
+
 
 // 家人列表和选中项
 const familyList = ref<responseFamily[]>([])

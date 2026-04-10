@@ -15,6 +15,7 @@ import { useAuthorizationStore } from "@/stores/modules/userStore"
 // import { reject } from "assert";
 
 // const baseURL = 'https://pcapi-xiaotuxian-front-devtest.itheima.net'
+// const baseURL = 'https://crythic.777p.cn/skin'
 const baseURL = 'http://localhost:8080/api'
 
 // 添加拦截器

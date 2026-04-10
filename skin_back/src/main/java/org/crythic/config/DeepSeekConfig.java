@@ -29,4 +29,18 @@ public class DeepSeekConfig {
                 )
                 .build();
     }
+
+    // --- 新增的 Bean ---
+    // 这个 ChatClient 专门用于不需要保存聊天记录的场景（例如生成标题）
+    @Bean("statelessChatClient") // 明确指定一个 Bean 名称，方便注入
+    public ChatClient statelessChatClient(OpenAiChatModel openAiChatModel) {
+        return ChatClient
+                .builder(openAiChatModel)
+                .defaultSystem("你一个用于生成AI问诊建议和疾病介绍的AI，请根据用户给予的信息进行回答") // 可以为这个无状态客户端设置一个专门的默认系统提示
+                .defaultAdvisors(
+                        new SimpleLoggerAdvisor() // 仍然可以保留日志顾问，但不再包含聊天记忆顾问
+                )
+                .build();
+    }
+
 }
