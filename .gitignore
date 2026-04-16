@@ -1,73 +1,49 @@
-### backend ### 
-HELP.md
-target
-libs
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
-
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
+﻿# ===== Monorepo common =====
+.idea/
+.vscode/
 *.iml
 *.ipr
+*.iws
+.DS_Store
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+# ===== Java / Maven =====
+**/target/
+.mvn/wrapper/maven-wrapper.jar
+HELP.md
+libs/
+
+# Build dirs created by some IDE/plugins
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
-.vscode/
-application.properties
+# Spring env config policy
+# Track: application.yml + application-example.yml
+# Ignore: local/dev runtime secrets
+**/src/main/resources/application-local.yml
+**/src/main/resources/application-dev.yml
 
-src/main/resources/application.yml
+# Optional local override files
+*.local
 
-#配置文件
-application.yml
-application.yaml
-
-###  front end ###
-.husky
-logs
+# ===== Frontend =====
+.husky/
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
-node_modules
-dist
-.DS_Store
-*.local
-
+node_modules/
+dist/
 manifest.json
 
-### python ###
-cache/
+# ===== Python =====
 __pycache__/
 *.pyc
-.venv
-环钻case
-*.pth
+.venv/
+cache/
 
-# skin-LSAtrans
-.mvn
-
-
+# ===== Project docs / agent files =====
 AGENTS.md

@@ -1,0 +1,43 @@
+﻿# Copy this file to application-local.yml (local) or application-dev.yml (deployment)
+# and fill values with your own credentials.
+
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/skin?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+    username: <DB_USERNAME>
+    password: <DB_PASSWORD>
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  cache:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+  ai:
+    openai:
+      base-url: https://api.deepseek.com
+      api-key: <DEEPSEEK_API_KEY>
+      chat:
+        options:
+          model: deepseek-chat
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: <MAIL_USERNAME>
+    password: <MAIL_AUTH_CODE>
+    protocol: smtps
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
+aliyun:
+  oss:
+    endpoint: <OSS_ENDPOINT>
+    bucketname: <OSS_BUCKET>
+    region: <OSS_REGION>
+
+wechat:
+  appid: <WECHAT_APPID>
+  secret: <WECHAT_SECRET>
