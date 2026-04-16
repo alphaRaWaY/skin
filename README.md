@@ -1,7 +1,7 @@
 # Skin - AI 皮肤分析系统
 
 <p align="center">
-  <img src="skin_front/src/static/images/logo_icon.jpg" alt="Skin Logo" width="96" />
+  <img src="skin-front/src/static/images/logo_icon.jpg" alt="Skin Logo" width="96" />
 </p>
 
 <p align="center">
