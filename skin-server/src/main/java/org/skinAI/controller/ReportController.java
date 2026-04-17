@@ -1,11 +1,10 @@
 package org.skinAI.controller;
 
+import org.skinAI.client.AiServiceClient;
 import org.skinAI.pojo.Result;
 import org.skinAI.pojo.report.Report;
-import org.skinAI.services.DeepSeekService;
 import org.skinAI.services.ReportService;
 import org.skinAI.utils.TestAnalyzer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,11 +13,13 @@ import java.util.List;
 @RequestMapping("/api/reports")
 public class ReportController {
 
-    @Autowired
-    private DeepSeekService deepSeekService;
+    private final AiServiceClient aiServiceClient;
+    private final ReportService reportService;
 
-    @Autowired
-    private ReportService reportService;
+    public ReportController(AiServiceClient aiServiceClient, ReportService reportService) {
+        this.aiServiceClient = aiServiceClient;
+        this.reportService = reportService;
+    }
 
     @PostMapping
     public Result createReport(@RequestBody Report report) {
@@ -48,14 +49,12 @@ public class ReportController {
     }
 
     @PostMapping("/analys")
-    public Result<Report> getAllReports(@RequestBody Report report) {
-        System.out.println(report);
-//        Report report1 = ReportAnalyzer.analyzeReport(report);
-        Report report1 = TestAnalyzer.analyzeReport(report);
-        String advice = deepSeekService.getAdvice("以下是一个患者的疾病类型，请返回一个简短的建议，请不要使用markdown语法，而是使用简单的字符串："+report1.toString());
-        String introduction = deepSeekService.getAdvice("以下是一个患者的疾病类型，请返回一个他的疾病的简单介绍，请不要使用markdown语法，而是使用简单的字符串"+report1.toString());
-        report1.setAdvice(advice);
-        report1.setIntroduction(introduction);
-        return Result.success(report1);
+    public Result<Report> analyzeReport(@RequestBody Report report) {
+        Report analyzed = TestAnalyzer.analyzeReport(report);
+        String advice = aiServiceClient.getAdvice("Generate treatment suggestions for this report: " + analyzed);
+        String introduction = aiServiceClient.getAdvice("Generate disease introduction for this report: " + analyzed);
+        analyzed.setAdvice(advice);
+        analyzed.setIntroduction(introduction);
+        return Result.success(analyzed);
     }
 }

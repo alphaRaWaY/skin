@@ -9,14 +9,6 @@ spring:
       host: 127.0.0.1
       port: 6379
 
-aliyun:
-  oss:
-    endpoint: <OSS_ENDPOINT>
-    bucketname: <OSS_BUCKET>
-    region: <OSS_REGION>
-
-services:
-  ai:
-    base-url: http://127.0.0.1:8082
-  lsatrans:
-    base-url: http://127.0.0.1:8090
+wechat:
+  appid: <WECHAT_APPID>
+  secret: <WECHAT_SECRET>

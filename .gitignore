@@ -47,3 +47,7 @@ cache/
 
 # ===== Project docs / agent files =====
 AGENTS.md
+
+dump.rdb
+
+.m2

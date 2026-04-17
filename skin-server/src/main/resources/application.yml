@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   application:
     name: skin-server
   profiles:
@@ -6,14 +6,18 @@
 
 logging:
   file:
-    name: target/skin.log
-  level:
-    org.springframework.ai.chat.client.advisor: debug
+    name: target/skin-server.log
 
 mybatis:
   configuration:
     map-underscore-to-camel-case: true
 
 server:
-  port: 8081
+  port: 8083
   address: 0.0.0.0
+
+services:
+  ai:
+    base-url: ${AI_SERVICE_BASE_URL:http://127.0.0.1:8082}
+  lsatrans:
+    base-url: ${LSATRANS_BASE_URL:http://127.0.0.1:8090}

@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: skin-ai
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+logging:
+  file:
+    name: target/skin-ai.log
+  level:
+    org.springframework.ai.chat.client.advisor: debug
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
+server:
+  port: 8082
+  address: 0.0.0.0
