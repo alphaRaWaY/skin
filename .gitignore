@@ -38,6 +38,7 @@ lerna-debug.log*
 node_modules/
 dist/
 manifest.json
+skin-front/.env.dev
 
 # ===== Python =====
 __pycache__/
