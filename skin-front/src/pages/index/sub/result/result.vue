@@ -1,194 +1,143 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { computed, onMounted, ref } from 'vue'
 import { useReportStore } from '@/stores/modules/reportStore'
-import { getImage, postReport } from '@/services/reportService';
-import type {Report} from '@/types/report'
+import { getImage, postReport, uploadImageToServer } from '@/services/reportService'
 
-const report = useReportStore();
-const uploadedImage = ref('');
-const formData = report.form;
-const result = report.resultValue;
+const report = useReportStore()
+const displayImage = ref('')
 
-// 疾病类型对应的指标名称映射
-const diseaseIndicators = {
-  '瘢痕': ['色素沉着', '高度', '血管分布', '柔软度'],
-  '特应性皮炎': ['红斑', '浸润', '脱屑', '苔藓样变'],
-  '银屑病': ['皮肤面积', '红斑', '脱屑', '硬化'],
-  // 默认情况
-  'default': ['指标', '指标2', '指标3', '指标4']
-}
+const indicators = computed(() => {
+  return report.resultValue.value
+    ? report.resultValue.value.split(',').map((s) => parseFloat(s.trim()))
+    : []
+})
 
-// 获取当前疾病对应的指标名称
-const currentIndicators = computed(() => {
-  const diseaseType = result?.diseaseType || '';
-  if (diseaseType.includes('瘢痕')) return diseaseIndicators['瘢痕'];
-  if (diseaseType.includes('特应性皮炎')) return diseaseIndicators['特应性皮炎'];
-  if (diseaseType.includes('银屑病')) return diseaseIndicators['银屑病'];
-  return diseaseIndicators['default'];
-});
-
-
-
-const reset = ()=>{
-  uni.showModal({
-    title: '提示',
-    content: '你确定要放弃此次结果吗？',
-    success: function (res) {
-      if (res.confirm) {
-        report.reset()
-        uni.showToast({
-          title:'已放弃结果',
-          icon:'none'
-        })
-        setTimeout(()=>{
-          uni.switchTab({
-            url: '/pages/index/index' ,
-          })
-        },500);
-      }
-    }
-  })
-}
-
-const save = async () => {
-  const data = report.getReport();
-  // 确保日期格式正确
-  const postData = {
-    ...data,
-    checkTime: convertToISOTime(data.checkTime)
-  };
-  console.log(postData);
-  try {
-    const response = await postReport(postData);
-    uni.showToast({
-      title:'保存成功',
-      icon:'success'
-    })
-    uni.switchTab({
-      url:'/pages/index/index'
-    })
-  } catch (error) {
-    console.log(error)
-  }
+const isLocalPath = (value: string) => {
+  if (!value) return false
+  return (
+    value.startsWith('wxfile://') ||
+    value.startsWith('/static/') ||
+    value.startsWith('/') ||
+    value.startsWith('http://') ||
+    value.startsWith('https://')
+  )
 }
 
 const convertToISOTime = (timeString: string) => {
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(timeString)) {
-    return timeString;
+    return timeString
   }
-  if (timeString.includes('上午') || timeString.includes('下午')) {
-    return convertChineseTimeToISO(timeString);
+  const date = new Date(timeString)
+  if (isNaN(date.getTime())) {
+    return new Date().toISOString().split('.')[0]
   }
-  try {
-    const date = new Date(timeString);
-    return date.toISOString().split('.')[0];
-  } catch (e) {
-    console.warn('无法解析日期，使用当前时间:', timeString);
-    return new Date().toISOString().split('.')[0];
-  }
+  return date.toISOString().split('.')[0]
 }
 
-const convertChineseTimeToISO = (chineseTime: string) => {
-  try {
-    const normalized = chineseTime
-      .replace('上午', 'AM')
-      .replace('下午', 'PM')
-      .replace(/\s+/g, ' ');
-    const date = new Date(normalized);
-    if (isNaN(date.getTime())) {
-      throw new Error('Invalid date format');
+const abandonResult = () => {
+  uni.showModal({
+    title: '提示',
+    content: '确认放弃当前检测结果？',
+    success: (res) => {
+      if (!res.confirm) return
+      report.reset()
+      uni.switchTab({ url: '/pages/index/index' })
     }
-    return date.toISOString().split('.')[0];
-  } catch (error) {
-    console.error('日期转换失败:', error);
-    return new Date().toISOString();
-  }
+  })
 }
 
-const indicators = computed(() => {
-  return result.value
-    ? result.value.split(',').map(s => parseFloat(s.trim()))
-    : [];
-});
+const saveReport = async () => {
+  const data = report.getReport()
+  let imageUrl = data.imageUrl
+
+  try {
+    uni.showLoading({ title: '保存中...' })
+
+    // 只有保存报告时才上传图片到 OSS
+    if (isLocalPath(imageUrl)) {
+      const upload = await uploadImageToServer(imageUrl)
+      imageUrl = upload.result
+    }
+
+    const payload = {
+      ...data,
+      imageUrl,
+      checkTime: convertToISOTime(data.checkTime)
+    }
+
+    await postReport(payload)
+    report.setImageUrl(imageUrl)
+    uni.hideLoading()
+    uni.showToast({ title: '保存成功', icon: 'success' })
+    uni.switchTab({ url: '/pages/index/index' })
+  } catch (error) {
+    uni.hideLoading()
+    uni.showToast({ title: '保存失败', icon: 'none' })
+    console.error(error)
+  }
+}
 
 onMounted(async () => {
-  if (report.imageUrl) {
-    try {
-      const res = await getImage(report.imageUrl);
-      console.log(res);
-      uploadedImage.value = res.result;
-    } catch (e) {
-      console.error('图片获取失败', e);
-    }
-  } else {
-    uni.showToast({
-      title: '未上传照片',
-      icon: 'error'
-    });
+  const raw = report.imageUrl
+  if (!raw) return
+
+  if (isLocalPath(raw)) {
+    displayImage.value = raw
+    return
   }
-});
+
+  try {
+    const res = await getImage(raw)
+    displayImage.value = res.result
+  } catch (error) {
+    console.error(error)
+  }
+})
 </script>
 
 <template>
   <view class="container">
-    <!-- 指标展示 -->
-    <uni-notice-bar
-      show-icon
-      scrollable
-      text="AI 检测完成，以下为分析结果，请根据建议及时就医"
-    />
+    <uni-notice-bar show-icon scrollable text="AI结果仅供健康参考，不替代医生诊断。" />
 
     <view class="result-box">
       <text class="result-label">检测指标</text>
       <view class="indicator-grid">
         <view v-for="(item, index) in indicators" :key="index" class="indicator-card">
           <text class="indicator-value">{{ item }}</text>
-          <text class="indicator-index">{{ currentIndicators[index] }}</text>
+          <text class="indicator-index">指标 {{ index + 1 }}</text>
         </view>
       </view>
     </view>
 
-    <!-- 操作按钮 -->
     <view class="btn-group">
-      <button type="primary" class="btn" @click="reset">重新检测</button>
-      <button class="btn" @click="save">保存结果</button>
+      <button type="primary" class="btn" @click="abandonResult">放弃结果</button>
+      <button class="btn" @click="saveReport">保存报告</button>
     </view>
 
-    <!-- 基本信息卡片 -->
     <uni-section title="基本信息" type="line" padding>
       <view class="info">
-        <view>用户名：{{ formData.username }}</view>
-        <view>性别：<uni-tag :text="formData.gender" type="success" /></view>
-        <view>年龄：{{ formData.age }}</view>
-        <view>症状：{{ formData.symptoms }}</view>
-        <view>持续时间：{{ formData.duration }}</view>
-        <view>治疗措施：{{ formData.treatment }}</view>
-        <view>其他信息：{{ formData.other }}</view>
-        <view>疾病类型：<uni-tag :text="result.diseaseType" type="warning" /></view>
-        <view>检测时间：{{ formData.checkTime }}</view>
+        <view>姓名：{{ report.form.username }}</view>
+        <view>性别：{{ report.form.gender }}</view>
+        <view>年龄：{{ report.form.age }}</view>
+        <view>症状：{{ report.form.symptoms }}</view>
       </view>
     </uni-section>
 
-    <!-- 图片展示 -->
-    <view v-if="uploadedImage" class="image-wrapper">
-      <image :src="uploadedImage" mode="aspectFit" />
+    <view v-if="displayImage" class="image-wrapper">
+      <image :src="displayImage" mode="aspectFit" />
     </view>
 
-    <!-- AI建议 -->
-    <uni-card title="AI 建议" sub-title="智能分析" mode="style" :is-shadow="true">
-      <text>{{ result.advice }}</text>
+    <uni-card title="AI建议" sub-title="仅供参考" mode="style" :is-shadow="true">
+      <text user-select>{{ report.resultValue.advice }}</text>
     </uni-card>
 
-    <!-- 疾病介绍 -->
-    <uni-card title="疾病介绍" sub-title="健康科普" mode="style" :is-shadow="true">
-      <text>{{ result.introduction }}</text>
+    <uni-card title="疾病介绍" sub-title="辅助信息" mode="style" :is-shadow="true">
+      <text user-select>{{ report.resultValue.introduction }}</text>
     </uni-card>
   </view>
 </template>
 
 <style scoped>
-/* 原有样式保持不变 */
 .container {
   padding: 24rpx;
   background-color: #f4f4f4;
@@ -200,11 +149,7 @@ onMounted(async () => {
   align-items: center;
   margin: 32rpx 0;
 }
-.result-value {
-  font-size: 80rpx;
-  color: #e43d33;
-  font-weight: bold;
-}
+
 .result-label {
   font-size: 28rpx;
   color: #666;
@@ -215,6 +160,7 @@ onMounted(async () => {
   justify-content: space-around;
   margin: 20rpx 0;
 }
+
 .btn {
   flex: 1;
   margin: 0 10rpx;
@@ -226,9 +172,6 @@ onMounted(async () => {
   padding: 10rpx;
   font-size: 28rpx;
   margin-bottom: 10rpx;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .image-wrapper {
@@ -236,6 +179,7 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
 }
+
 image {
   width: 100%;
   height: 300rpx;

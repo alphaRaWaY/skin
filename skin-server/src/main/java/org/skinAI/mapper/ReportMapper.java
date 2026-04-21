@@ -3,6 +3,7 @@ package org.skinAI.mapper;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.skinAI.pojo.report.ChildReport;
 import org.skinAI.pojo.report.Report;
@@ -21,14 +22,14 @@ public interface ReportMapper {
     int insertReport(ChildReport childReport);
 
     @Delete("DELETE FROM report WHERE id = #{id} and userid = #{userid}")
-    int deleteReportById(Long id,Integer userid);
+    int deleteReportById(@Param("id") Long id, @Param("userid") Integer userid);
 
     @Select("SELECT * FROM report WHERE id = #{id} and userid = #{userid}")
-    Report selectReportById(Long id,Integer userid);
+    Report selectReportById(@Param("id") Long id, @Param("userid") Integer userid);
 
     @Select("SELECT * FROM report WHERE userid = #{userid} ORDER BY check_time DESC")
     List<Report> selectAllReports(Integer userid);
 
     @Select("SELECT * FROM report WHERE userid = #{userid} and username=#{username} ORDER BY check_time DESC")
-    List<Report> selectReportsByUsername(String username, Integer userid);
+    List<Report> selectReportsByUsername(@Param("username") String username, @Param("userid") Integer userid);
 }

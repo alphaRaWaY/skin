@@ -29,8 +29,11 @@ public class ReportController {
 
     @DeleteMapping("/{id}")
     public Result deleteReport(@PathVariable Long id) {
-        reportService.deleteReport(id);
-        return Result.success();
+        int affected = reportService.deleteReport(id);
+        if (affected > 0) {
+            return Result.success();
+        }
+        return Result.error("report not found");
     }
 
     @GetMapping("/{id}")
@@ -51,10 +54,31 @@ public class ReportController {
     @PostMapping("/analys")
     public Result<Report> analyzeReport(@RequestBody Report report) {
         Report analyzed = TestAnalyzer.analyzeReport(report);
-        String advice = aiServiceClient.getAdvice("Generate treatment suggestions for this report: " + analyzed);
-        String introduction = aiServiceClient.getAdvice("Generate disease introduction for this report: " + analyzed);
+        String advicePrompt = String.format(
+                "Generate concise treatment suggestions for a mock skin report. " +
+                        "diseaseType=%s; symptoms=%s; age=%s; gender=%s; value=%s. " +
+                        "Do not ask user for more fields. Return plain Chinese.",
+                safe(analyzed.getDiseaseType()),
+                safe(analyzed.getSymptoms()),
+                String.valueOf(analyzed.getAge()),
+                safe(analyzed.getGender()),
+                safe(analyzed.getValue())
+        );
+        String introPrompt = String.format(
+                "Generate a concise disease introduction in Chinese for diseaseType=%s. " +
+                        "Use value=%s as mock severity reference. Do not ask follow-up questions.",
+                safe(analyzed.getDiseaseType()),
+                safe(analyzed.getValue())
+        );
+
+        String advice = aiServiceClient.getAdvice(advicePrompt);
+        String introduction = aiServiceClient.getAdvice(introPrompt);
         analyzed.setAdvice(advice);
         analyzed.setIntroduction(introduction);
         return Result.success(analyzed);
+    }
+
+    private String safe(String value) {
+        return value == null || value.isBlank() ? "unknown" : value;
     }
 }

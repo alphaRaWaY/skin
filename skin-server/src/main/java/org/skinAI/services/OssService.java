@@ -3,156 +3,134 @@ package org.skinAI.services;
 import com.aliyun.oss.ClientBuilderConfiguration;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
-import com.aliyun.oss.OSSException;
 import com.aliyun.oss.common.auth.CredentialsProviderFactory;
 import com.aliyun.oss.common.auth.EnvironmentVariableCredentialsProvider;
 import com.aliyun.oss.common.comm.SignVersion;
 import com.aliyun.oss.model.PutObjectRequest;
-import com.aliyun.oss.model.PutObjectResult;
 import com.aliyuncs.exceptions.ClientException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.util.Date;
 
 @Service
 public class OssService {
-    // Endpoint
+
+    private static final String DEFAULT_PREFIX = "skinAI/";
+
     @Value("${aliyun.oss.endpoint}")
-    private String ENDPOINT;
-    // 填写Bucket名称，例如examplebucket。
+    private String endpoint;
 
     @Value("${aliyun.oss.bucketname}")
-    private String BUCKETNAME;
-    // 填写Bucket所在地域。以华东1（杭州）为例，Region填写为cn-hangzhou。
+    private String bucketName;
 
     @Value("${aliyun.oss.region}")
-    public String REGION = "cn-guangzhou";
+    private String region;
+
     public String generatePresignedUrl(String objectKey) {
-        EnvironmentVariableCredentialsProvider credentialsProvider = null;
+        OSS ossClient = createClient();
+        try {
+            String normalizedKey = resolveExistingKey(ossClient, objectKey);
+            Date expiration = new Date(System.currentTimeMillis() + 3600L * 1000);
+            return ossClient.generatePresignedUrl(bucketName, normalizedKey, expiration).toString();
+        } finally {
+            ossClient.shutdown();
+        }
+    }
+
+    public String uploadFile(String objectKey, InputStream in) throws Exception {
+        String normalizedKey = normalizeObjectKey(objectKey);
+        OSS ossClient = createClient();
+        try {
+            ossClient.putObject(new PutObjectRequest(bucketName, normalizedKey, in));
+            return normalizedKey;
+        } finally {
+            ossClient.shutdown();
+        }
+    }
+
+    public void deleteFile(String objectKey) {
+        OSS ossClient = createClient();
+        try {
+            String normalizedKey = normalizeObjectKey(objectKey);
+            if (ossClient.doesObjectExist(bucketName, normalizedKey)) {
+                ossClient.deleteObject(bucketName, normalizedKey);
+            }
+            for (String legacyKey : buildLegacyKeys(normalizedKey)) {
+                if (ossClient.doesObjectExist(bucketName, legacyKey)) {
+                    ossClient.deleteObject(bucketName, legacyKey);
+                }
+            }
+        } finally {
+            ossClient.shutdown();
+        }
+    }
+
+    public String normalizeObjectKey(String objectKey) {
+        if (objectKey == null) {
+            return "";
+        }
+
+        String key = objectKey.trim().replaceAll("^\"|\"$", "");
+        if (key.isEmpty()) {
+            return "";
+        }
+
+        if (key.startsWith("http://") || key.startsWith("https://")) {
+            try {
+                URI uri = URI.create(key);
+                key = uri.getPath();
+            } catch (Exception ignored) {
+                return key;
+            }
+        }
+
+        key = key.replaceFirst("^/+", "");
+        if (key.startsWith(bucketName + "/")) {
+            key = key.substring(bucketName.length() + 1);
+        }
+        if (!key.contains("/")) {
+            key = DEFAULT_PREFIX + key;
+        }
+        return key;
+    }
+
+    private OSS createClient() {
+        EnvironmentVariableCredentialsProvider credentialsProvider;
         try {
             credentialsProvider = CredentialsProviderFactory.newEnvironmentVariableCredentialsProvider();
         } catch (ClientException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to create OSS credentials provider", e);
         }
-        // 创建OSSClient实例。
-        ClientBuilderConfiguration clientBuilderConfiguration = new ClientBuilderConfiguration();
-        clientBuilderConfiguration.setSignatureVersion(SignVersion.V4);
-        OSS ossClient = OSSClientBuilder.create()
-                .endpoint(ENDPOINT)
-                .credentialsProvider(credentialsProvider)
-                .clientConfiguration(clientBuilderConfiguration)
-                .region(REGION)
-                .build();
 
-        // 设置URL过期时间(建议1小时)
-        Date expiration = new Date(System.currentTimeMillis() + 3600 * 1000);
-        return ossClient.generatePresignedUrl(BUCKETNAME, objectKey, expiration).toString();
-    }
+        ClientBuilderConfiguration config = new ClientBuilderConfiguration();
+        config.setSignatureVersion(SignVersion.V4);
 
-    /**
-     *
-     * @param in 上传资源的本地URL
-     * @param objectName 填写Object完整路径，完整路径中不能包含Bucket名称，例如exampledir/exampleobject.txt。
-     * @throws Exception 抛出文件输入输出流的异常。
-     */
-    public String uploadFile(String objectName, InputStream in) throws Exception {
-        EnvironmentVariableCredentialsProvider credentialsProvider = CredentialsProviderFactory.newEnvironmentVariableCredentialsProvider();
-        // 创建OSSClient实例。
-        ClientBuilderConfiguration clientBuilderConfiguration = new ClientBuilderConfiguration();
-        clientBuilderConfiguration.setSignatureVersion(SignVersion.V4);
-        OSS ossClient = OSSClientBuilder.create()
-                .endpoint(ENDPOINT)
-                .credentialsProvider(credentialsProvider)
-                .clientConfiguration(clientBuilderConfiguration)
-                .region(REGION)
-                .build();
-        //组成 https://bucket名称.区域节点/objectName
-        //https://wry-ali-bucket.oss-cn-guangzhou.aliyuncs.com/objectName
-//        String url = "https://"+BUCKETNAME+"."+ENDPOINT+"/"+objectName;
-        try {
-            // 创建PutObjectRequest对象。
-            PutObjectRequest putObjectRequest = new PutObjectRequest(BUCKETNAME, objectName,in);
-            // 如果需要上传时设置存储类型和访问权限，请参考以下示例代码。
-            // ObjectMetadata metadata = new ObjectMetadata();
-            // metadata.setHeader(OSSHeaders.OSS_STORAGE_CLASS, StorageClass.Standard.toString());
-            // metadata.setObjectAcl(CannedAccessControlList.Private);
-            // putObjectRequest.setMetadata(metadata);
-            // 上传资源。
-            PutObjectResult result = ossClient.putObject(putObjectRequest);
-        } catch (OSSException oe) {
-            System.out.println("Caught an OSSException, which means your request made it to OSS, "
-                    + "but was rejected with an error response for some reason.");
-            System.out.println("Error Message:" + oe.getErrorMessage());
-            System.out.println("Error Code:" + oe.getErrorCode());
-            System.out.println("Request ID:" + oe.getRequestId());
-            System.out.println("Host ID:" + oe.getHostId());
-        } catch (com.aliyun.oss.ClientException ce) {
-            System.out.println("Caught an ClientException, which means the client encountered "
-                    + "a serious internal problem while trying to communicate with OSS, "
-                    + "such as not being able to access the network.");
-            System.out.println("Error Message:" + ce.getMessage());
-        } finally {
-            if (ossClient != null) {
-                ossClient.shutdown();
-            }
-        }
-        return objectName;
-    }
-
-    /**
-     * 阿里云官方的远程配置OSS防盗链SDK
-     * @param args
-     * @throws Exception
-     */
-   /* public static void main(String[] args) throws Exception {
-        // Endpoint以华东1（杭州）为例，其它Region请按实际情况填写。
-        String endpoint = ENDPOINT;
-        // 从环境变量中获取访问凭证。运行本代码示例之前，请确保已设置环境变量OSS_ACCESS_KEY_ID和OSS_ACCESS_KEY_SECRET。
-        EnvironmentVariableCredentialsProvider credentialsProvider = CredentialsProviderFactory.newEnvironmentVariableCredentialsProvider();
-        // 填写Bucket名称，例如examplebucket。
-        String bucketName = BUCKETNAME;
-        // 填写Bucket所在地域。以华东1（杭州）为例，Region填写为cn-hangzhou。
-        String region = REGION;
-
-        // 创建OSSClient实例。
-        ClientBuilderConfiguration clientBuilderConfiguration = new ClientBuilderConfiguration();
-        clientBuilderConfiguration.setSignatureVersion(SignVersion.V4);
-        OSS ossClient = OSSClientBuilder.create()
+        return OSSClientBuilder.create()
                 .endpoint(endpoint)
                 .credentialsProvider(credentialsProvider)
-                .clientConfiguration(clientBuilderConfiguration)
+                .clientConfiguration(config)
                 .region(region)
                 .build();
+    }
 
-        try {
-            List<String> refererList = new ArrayList<String>();
-            // 添加Referer白名单。Referer参数支持通配符星号（*）和问号（?）。
-            refererList.add("http:100.67.127.254//");
-            refererList.add("https://www.aliyun.com");
-            refererList.add("https://www.aliyun.com");
-            // refererList.add("http://www.help.aliyun.com");
-            // refererList.add("http://www.?.aliyuncs.com");
-            // 设置存储空间Referer列表。设为true表示Referer字段允许为空，设为false表示Referer字段不允许为空。
-            BucketReferer br = new BucketReferer(true, refererList);
-            ossClient.setBucketReferer(bucketName, br);
-        } catch (OSSException oe) {
-            System.out.println("Caught an OSSException, which means your request made it to OSS, "
-                    + "but was rejected with an error response for some reason.");
-            System.out.println("Error Message:" + oe.getErrorMessage());
-            System.out.println("Error Code:" + oe.getErrorCode());
-            System.out.println("Request ID:" + oe.getRequestId());
-            System.out.println("Host ID:" + oe.getHostId());
-        } catch (com.aliyun.oss.ClientException ce) {
-            System.out.println("Caught an ClientException, which means the client encountered "
-                    + "a serious internal problem while trying to communicate with OSS, "
-                    + "such as not being able to access the network.");
-            System.out.println("Error Message:" + ce.getMessage());
-        } finally {
-            if (ossClient != null) {
-                ossClient.shutdown();
+    private String resolveExistingKey(OSS ossClient, String objectKey) {
+        String normalizedKey = normalizeObjectKey(objectKey);
+        if (ossClient.doesObjectExist(bucketName, normalizedKey)) {
+            return normalizedKey;
+        }
+        for (String legacyKey : buildLegacyKeys(normalizedKey)) {
+            if (ossClient.doesObjectExist(bucketName, legacyKey)) {
+                return legacyKey;
             }
         }
-    }*/
+        return normalizedKey;
+    }
+
+    private String[] buildLegacyKeys(String normalizedKey) {
+        String filename = normalizedKey.replaceFirst("^skinAI/", "").replaceFirst("^skin/", "");
+        return new String[]{"skin/" + filename, "skinAI/" + filename};
+    }
 }

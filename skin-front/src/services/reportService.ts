@@ -62,3 +62,10 @@ export const getImage = (objectKey:string) =>{
       data: objectKey
     })
 }
+
+export const deleteUploadedImage = (objectKey: string) => {
+  return http({
+    method: 'DELETE',
+    url: `/oss/object?objectKey=${encodeURIComponent(objectKey)}`
+  })
+}

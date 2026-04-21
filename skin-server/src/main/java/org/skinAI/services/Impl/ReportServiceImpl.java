@@ -4,6 +4,7 @@ package org.skinAI.services.Impl;
 import org.skinAI.mapper.ReportMapper;
 import org.skinAI.pojo.report.ChildReport;
 import org.skinAI.pojo.report.Report;
+import org.skinAI.services.OssService;
 import org.skinAI.services.ReportService;
 import org.skinAI.utils.ThreadLocalUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,8 @@ public class ReportServiceImpl implements ReportService {
 
     @Autowired
     private ReportMapper reportMapper;
+    @Autowired
+    private OssService ossService;
 
     @Override
     public int addReport(Report report) {
@@ -31,7 +34,17 @@ public class ReportServiceImpl implements ReportService {
     public int deleteReport(Long id) {
         Map<String,Object> map = ThreadLocalUtil.get();
         Integer userid = (Integer) map.get("userid");
-        return reportMapper.deleteReportById(id,userid);
+        Report report = reportMapper.selectReportById(id, userid);
+        int affected = reportMapper.deleteReportById(id, userid);
+
+        if (affected > 0 && report != null && report.getImageUrl() != null && !report.getImageUrl().isBlank()) {
+            try {
+                ossService.deleteFile(report.getImageUrl());
+            } catch (Exception ignored) {
+                // keep DB deletion result as success; object cleanup can be retried manually if needed
+            }
+        }
+        return affected;
     }
     @Override
     public Report getReportById(Long id) {
