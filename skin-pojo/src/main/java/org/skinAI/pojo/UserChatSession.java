@@ -9,5 +9,8 @@ public class UserChatSession {
     private Long id;
     private Integer userId;
     private String chatId;
+    private String title;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime lastActivityTime;
 }

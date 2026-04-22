@@ -17,6 +17,6 @@ aliyun:
 
 services:
   ai:
-    base-url: http://127.0.0.1:8082
+    base-url: http://127.0.0.1:19082
   lsatrans:
-    base-url: http://127.0.0.1:8090
+    base-url: http://127.0.0.1:19090

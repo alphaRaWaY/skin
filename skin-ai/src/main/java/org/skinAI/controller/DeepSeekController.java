@@ -2,6 +2,7 @@ package org.skinAI.controller;
 
 import org.skinAI.pojo.ChatMessage;
 import org.skinAI.pojo.ChatRequest;
+import org.skinAI.pojo.ChatSessionTitleRequest;
 import org.skinAI.pojo.Result;
 import org.skinAI.pojo.UserChatSession;
 import org.skinAI.services.DeepSeekService;
@@ -49,7 +50,17 @@ public class DeepSeekController {
 
     @DeleteMapping("/chat/{chatId}")
     public Result deleteUserChats(@PathVariable String chatId) {
-        deepSeekService.deleteUserChats(chatId);
+        Map<String, Object> map = ThreadLocalUtil.get();
+        Integer userid = (Integer) map.get("userid");
+        deepSeekService.deleteUserChats(userid, chatId);
+        return Result.success();
+    }
+
+    @PatchMapping("/chat/{chatId}/title")
+    public Result updateChatTitle(@PathVariable String chatId, @RequestBody ChatSessionTitleRequest request) {
+        Map<String, Object> map = ThreadLocalUtil.get();
+        Integer userid = (Integer) map.get("userid");
+        deepSeekService.renameUserChat(userid, chatId, request.getTitle());
         return Result.success();
     }
 

@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 19080
 
 spring:
   application:
@@ -8,18 +8,18 @@ spring:
     gateway:
       routes:
         - id: skin-auth
-          uri: http://127.0.0.1:8081
+          uri: http://127.0.0.1:19081
           predicates:
             - Path=/api/login/**,/api/public/**,/api/hello/**
         - id: skin-ai
-          uri: http://127.0.0.1:8082
+          uri: http://127.0.0.1:19082
           predicates:
             - Path=/api/deepseek/**
         - id: skin-core
-          uri: http://127.0.0.1:8083
+          uri: http://127.0.0.1:19083
           predicates:
             - Path=/api/reports/**,/api/family/**,/api/oss/**
         - id: skin-lsatrans
-          uri: http://127.0.0.1:8090
+          uri: http://127.0.0.1:19090
           predicates:
             - Path=/api/lsatrans/**

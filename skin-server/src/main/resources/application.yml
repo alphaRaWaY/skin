@@ -13,11 +13,11 @@ mybatis:
     map-underscore-to-camel-case: true
 
 server:
-  port: 8083
+  port: 19083
   address: 0.0.0.0
 
 services:
   ai:
-    base-url: ${AI_SERVICE_BASE_URL:http://127.0.0.1:8082}
+    base-url: ${AI_SERVICE_BASE_URL:http://127.0.0.1:19082}
   lsatrans:
-    base-url: ${LSATRANS_BASE_URL:http://127.0.0.1:8090}
+    base-url: ${LSATRANS_BASE_URL:http://127.0.0.1:19090}

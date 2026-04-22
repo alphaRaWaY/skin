@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import { useReportStore } from '@/stores/modules/reportStore'
+import { onMounted, ref, watch } from 'vue'
+import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import CustomerNavbar from './components/CustomerNavbar.vue'
+import { useReportStore } from '@/stores/modules/reportStore'
 import type { responseFamily } from '@/types/family'
 import { getFamily } from '@/services/familyService'
-import { onPullDownRefresh } from '@dcloudio/uni-app'
+
 const store = useReportStore()
 
-// 表单数据
 const form = ref({
   username: '',
   gender: '',
@@ -18,58 +18,56 @@ const form = ref({
   other: ''
 })
 
-// 监听下拉刷新事件
-onPullDownRefresh(() => {
-  console.log('触发下拉刷新')
-  // 清空之前选中的家人，并重新获取列表
-  selectedFamilyId.value = null;
-  fetchFamilyList()
-})
-
-
-// 家人列表和选中项
 const familyList = ref<responseFamily[]>([])
 const selectedFamilyId = ref<number | null>(null)
 
-// 获取家人列表（请根据你的接口替换）
 const fetchFamilyList = async () => {
   try {
-    uni.showLoading({ title: '加载中...' })
-    const res = await getFamily();
-
+    const res = await getFamily()
     if (res.code === 0) {
       familyList.value = res.result || []
-    } else {
-      throw new Error(res.msg || '加载失败')
+      if (selectedFamilyId.value) {
+        const stillExists = familyList.value.some((f) => f.id === selectedFamilyId.value)
+        if (!stillExists) selectedFamilyId.value = null
+      }
+      return
     }
-  } catch (error) {
-    console.error('加载家人列表失败:', error)
-    uni.showToast({ title: error.message, icon: 'none' })
-  } finally {
-    uni.hideLoading()
+    throw new Error(res.msg || '获取家人列表失败')
+  } catch (error: any) {
+    uni.showToast({
+      title: error?.message || '获取家人列表失败',
+      icon: 'none'
+    })
   }
 }
 
-
-// 选择家人后自动填充表单
 watch(selectedFamilyId, (id) => {
-  const selected = familyList.value.find(item => item.id === id)
-  if (selected) {
-    form.value.username = selected.name
-    form.value.gender = selected.gender
-    form.value.age = selected.age
-  }
+  const selected = familyList.value.find((item) => item.id === id)
+  if (!selected) return
+  form.value.username = selected.name || selected.username || ''
+  form.value.gender = selected.gender || ''
+  form.value.age = Number(selected.age || 0)
 })
 
-// 初始化
 onMounted(() => {
   fetchFamilyList()
 })
 
-// 提交表单
+onShow(() => {
+  fetchFamilyList()
+})
+
+onPullDownRefresh(async () => {
+  try {
+    await fetchFamilyList()
+  } finally {
+    uni.stopPullDownRefresh()
+  }
+})
+
 const handleConfirm = () => {
   store.setForm(form.value)
-  uni.showToast({ title: '信息已提交', icon: 'success' })
+  uni.showToast({ title: '已保存', icon: 'success' })
   uni.navigateTo({ url: '/pages/index/sub/upload/upload' })
 }
 </script>
@@ -78,44 +76,50 @@ const handleConfirm = () => {
   <CustomerNavbar />
   <view class="form-container">
     <uni-forms :modelValue="form">
-      <!-- 家人下拉选择 -->
       <uni-forms-item label="选择家人">
         <uni-data-select
           v-model="selectedFamilyId"
-          :localdata="familyList.map(f => ({ value: f.id, text: `${f.name}（${f.relation}）` }))"
-          placeholder="请选择家人"
+          :localdata="familyList.map((f) => ({ value: f.id, text: `${f.name || f.username}（${f.relation}）` }))"
+          placeholder="请选择"
         />
       </uni-forms-item>
 
-      <!-- 基本信息表单 -->
       <uni-forms-item label="用户名">
         <uni-easyinput v-model="form.username" placeholder="请输入用户名" />
       </uni-forms-item>
+
       <uni-forms-item label="性别">
-        <uni-data-checkbox v-model="form.gender" :localdata="[
-          { value: '男', text: '男' },
-          { value: '女', text: '女' }
-        ]" />
+        <uni-data-checkbox
+          v-model="form.gender"
+          :localdata="[
+            { value: '男', text: '男' },
+            { value: '女', text: '女' }
+          ]"
+        />
       </uni-forms-item>
+
       <uni-forms-item label="年龄">
         <uni-easyinput v-model="form.age" type="number" placeholder="请输入年龄" />
       </uni-forms-item>
+
       <uni-forms-item label="症状">
-        <uni-easyinput v-model="form.symptoms" placeholder="请输入症状" />
-      </uni-forms-item>
-      <uni-forms-item label="持续时间">
-        <uni-easyinput v-model="form.duration" placeholder="如：2天/1周/3个月" />
-      </uni-forms-item>
-      <uni-forms-item label="治疗措施">
-        <uni-easyinput v-model="form.treatment" placeholder="请输入已采取的治疗措施" />
-      </uni-forms-item>
-      <uni-forms-item label="其他信息">
-        <uni-easyinput v-model="form.other" type="textarea" placeholder="如有其他补充，请输入" />
+        <uni-easyinput v-model="form.symptoms" placeholder="请输入症状描述" />
       </uni-forms-item>
 
-      <!-- 提交按钮 -->
+      <uni-forms-item label="持续时间">
+        <uni-easyinput v-model="form.duration" placeholder="例如：2周 / 3个月" />
+      </uni-forms-item>
+
+      <uni-forms-item label="既往治疗">
+        <uni-easyinput v-model="form.treatment" placeholder="请输入既往治疗情况" />
+      </uni-forms-item>
+
+      <uni-forms-item label="其他信息">
+        <uni-easyinput v-model="form.other" type="textarea" placeholder="可选补充信息" />
+      </uni-forms-item>
+
       <view class="confirm-button">
-        <button type="primary" @click="handleConfirm">确认信息</button>
+        <button type="primary" @click="handleConfirm">下一步：上传图片</button>
       </view>
     </uni-forms>
   </view>
@@ -125,6 +129,7 @@ const handleConfirm = () => {
 .form-container {
   padding: 20rpx;
 }
+
 .confirm-button {
   margin-top: 40rpx;
   display: flex;

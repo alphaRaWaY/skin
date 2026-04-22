@@ -7,7 +7,15 @@ create table chat_message
     content     text                                not null,
     create_time timestamp default CURRENT_TIMESTAMP null
 )
-    charset = utf8mb4;
+    engine = InnoDB;
+
+create definer = root@localhost trigger AfterChatMessageInsert_UpdateSessionActivity
+    after insert
+    on chat_message
+    for each row
+begin
+    -- missing source code
+end;
 
 create table user
 (
@@ -22,7 +30,7 @@ create table user
     constraint openid
         unique (openid)
 )
-    comment '用户表' charset = utf8mb4;
+    comment '用户表' engine = InnoDB;
 
 create table family
 (
@@ -36,7 +44,8 @@ create table family
     constraint family_user_id_fk
         foreign key (userid) references user (id)
 )
-    comment '家人';
+    comment '家人' engine = InnoDB
+                   charset = utf8;
 
 create table report
 (
@@ -58,16 +67,36 @@ create table report
     userid       bigint unsigned not null comment '用户外键',
     constraint report_user_id_fk
         foreign key (userid) references user (id)
-);
+)
+    engine = InnoDB
+    charset = utf8;
+
+create definer = root@localhost trigger BeforeUserUpdate_PreventOpenIDChange
+    before update
+    on user
+    for each row
+begin
+    -- missing source code
+end;
 
 create table user_chat_session
 (
-    id         bigint auto_increment
+    id                 bigint auto_increment
         primary key,
-    user_id    bigint unsigned                    not null,
-    chat_id    varchar(64)                        not null,
-    created_at datetime default CURRENT_TIMESTAMP null
+    user_id            bigint unsigned                    not null,
+    chat_id            varchar(64) charset utf8           not null,
+    title              varchar(128) charset utf8          null,
+    created_at         datetime default CURRENT_TIMESTAMP null,
+    updated_at         datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
+    last_activity_time datetime default CURRENT_TIMESTAMP null,
+    constraint uq_user_chat_session_user_chat
+        unique (user_id, chat_id),
+    constraint user_chat_session_user_id_fk
+        foreign key (user_id) references user (id)
 )
-    charset = utf8mb4;
+    engine = InnoDB;
 
-
+-- migration for existing databases (execute manually if table already exists)
+-- ALTER TABLE user_chat_session ADD COLUMN title VARCHAR(128) CHARSET utf8 NULL AFTER chat_id;
+-- ALTER TABLE user_chat_session ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP AFTER created_at;
+-- ALTER TABLE user_chat_session ADD UNIQUE KEY uq_user_chat_session_user_chat (user_id, chat_id);

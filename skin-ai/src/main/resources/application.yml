@@ -15,5 +15,5 @@ mybatis:
     map-underscore-to-camel-case: true
 
 server:
-  port: 8082
+  port: 19082
   address: 0.0.0.0
