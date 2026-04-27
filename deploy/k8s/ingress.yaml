@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: skin-gateway
+  namespace: skinai
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: skin-api.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: skin-gateway
+                port:
+                  number: 19080

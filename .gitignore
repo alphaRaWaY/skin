@@ -53,3 +53,8 @@ dump.rdb
 
 .m2
 .m2home
+
+# ===== Deployment secrets =====
+deploy/docker/.env
+deploy/k8s/secret.yaml
+skin-front/.wechat-private.key

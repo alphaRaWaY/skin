@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skinai-config
+  namespace: skinai
+data:
+  MYSQL_DATABASE: skin
+  MYSQL_HOST: mysql
+  MYSQL_PORT: "3306"
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  AUTH_SERVICE_URI: http://skin-auth:19081
+  AI_SERVICE_URI: http://skin-ai:19082
+  CORE_SERVICE_URI: http://skin-server:19083
+  LSATRANS_SERVICE_URI: http://skin-lsatrans:19090
+  DEEPSEEK_BASE_URL: https://api.deepseek.com
+  DEEPSEEK_MODEL: deepseek-chat

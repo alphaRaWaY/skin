@@ -1,0 +1,269 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skin-auth
+  namespace: skinai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skin-auth
+  template:
+    metadata:
+      labels:
+        app: skin-auth
+    spec:
+      containers:
+        - name: skin-auth
+          image: alpharaway/skin-auth:v1
+          ports:
+            - containerPort: 19081
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: local
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/skin?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: MYSQL_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: MYSQL_PASSWORD
+            - name: SPRING_DATA_REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: skinai-config
+                  key: REDIS_HOST
+            - name: SPRING_DATA_REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: skinai-config
+                  key: REDIS_PORT
+            - name: WECHAT_APPID
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: WECHAT_APPID
+            - name: WECHAT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: WECHAT_SECRET
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: skin-auth
+  namespace: skinai
+spec:
+  selector:
+    app: skin-auth
+  ports:
+    - port: 19081
+      targetPort: 19081
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skin-ai
+  namespace: skinai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skin-ai
+  template:
+    metadata:
+      labels:
+        app: skin-ai
+    spec:
+      containers:
+        - name: skin-ai
+          image: alpharaway/skin-ai:v1
+          ports:
+            - containerPort: 19082
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: local
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/skin?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: MYSQL_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: MYSQL_PASSWORD
+            - name: SPRING_DATA_REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: skinai-config
+                  key: REDIS_HOST
+            - name: SPRING_DATA_REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: skinai-config
+                  key: REDIS_PORT
+            - name: SPRING_AI_OPENAI_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: skinai-config
+                  key: DEEPSEEK_BASE_URL
+            - name: SPRING_AI_OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: DEEPSEEK_API_KEY
+            - name: SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: skinai-config
+                  key: DEEPSEEK_MODEL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: skin-ai
+  namespace: skinai
+spec:
+  selector:
+    app: skin-ai
+  ports:
+    - port: 19082
+      targetPort: 19082
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skin-server
+  namespace: skinai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skin-server
+  template:
+    metadata:
+      labels:
+        app: skin-server
+    spec:
+      containers:
+        - name: skin-server
+          image: alpharaway/skin-server:v1
+          ports:
+            - containerPort: 19083
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: local
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/skin?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: MYSQL_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: MYSQL_PASSWORD
+            - name: SPRING_DATA_REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: skinai-config
+                  key: REDIS_HOST
+            - name: SPRING_DATA_REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: skinai-config
+                  key: REDIS_PORT
+            - name: AI_SERVICE_BASE_URL
+              value: http://skin-ai:19082
+            - name: ALIYUN_OSS_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: OSS_ENDPOINT
+            - name: ALIYUN_OSS_BUCKETNAME
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: OSS_BUCKET
+            - name: ALIYUN_OSS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: OSS_REGION
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: skin-server
+  namespace: skinai
+spec:
+  selector:
+    app: skin-server
+  ports:
+    - port: 19083
+      targetPort: 19083
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skin-gateway
+  namespace: skinai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skin-gateway
+  template:
+    metadata:
+      labels:
+        app: skin-gateway
+    spec:
+      containers:
+        - name: skin-gateway
+          image: alpharaway/skin-gateway:v1
+          ports:
+            - containerPort: 19080
+          env:
+            - name: AUTH_SERVICE_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: skinai-config
+                  key: AUTH_SERVICE_URI
+            - name: AI_SERVICE_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: skinai-config
+                  key: AI_SERVICE_URI
+            - name: CORE_SERVICE_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: skinai-config
+                  key: CORE_SERVICE_URI
+            - name: LSATRANS_SERVICE_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: skinai-config
+                  key: LSATRANS_SERVICE_URI
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: skin-gateway
+  namespace: skinai
+spec:
+  selector:
+    app: skin-gateway
+  ports:
+    - port: 19080
+      targetPort: 19080

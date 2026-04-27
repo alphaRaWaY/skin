@@ -1,0 +1,140 @@
+name: skinai
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: skin-mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../../script.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.4
+    container_name: skin-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  skin-auth:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/java-service.Dockerfile
+      args:
+        SERVICE_MODULE: skin-auth
+    container_name: skin-auth
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      WECHAT_APPID: ${WECHAT_APPID}
+      WECHAT_SECRET: ${WECHAT_SECRET}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "19081:19081"
+
+  skin-ai:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/java-service.Dockerfile
+      args:
+        SERVICE_MODULE: skin-ai
+    container_name: skin-ai
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_AI_OPENAI_BASE_URL: ${DEEPSEEK_BASE_URL}
+      SPRING_AI_OPENAI_API_KEY: ${DEEPSEEK_API_KEY}
+      SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL: ${DEEPSEEK_MODEL}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "19082:19082"
+
+  skin-server:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/java-service.Dockerfile
+      args:
+        SERVICE_MODULE: skin-server
+    container_name: skin-server
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      AI_SERVICE_BASE_URL: http://skin-ai:19082
+      ALIYUN_OSS_ENDPOINT: ${OSS_ENDPOINT}
+      ALIYUN_OSS_BUCKETNAME: ${OSS_BUCKET}
+      ALIYUN_OSS_REGION: ${OSS_REGION}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      skin-ai:
+        condition: service_started
+    ports:
+      - "19083:19083"
+
+  skin-gateway:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/java-service.Dockerfile
+      args:
+        SERVICE_MODULE: skin-gateway
+    container_name: skin-gateway
+    environment:
+      AUTH_SERVICE_URI: http://skin-auth:19081
+      AI_SERVICE_URI: http://skin-ai:19082
+      CORE_SERVICE_URI: http://skin-server:19083
+      LSATRANS_SERVICE_URI: http://skin-lsatrans:19090
+    depends_on:
+      skin-auth:
+        condition: service_started
+      skin-ai:
+        condition: service_started
+      skin-server:
+        condition: service_started
+    ports:
+      - "19080:19080"
+
+volumes:
+  mysql_data:
+  redis_data:

@@ -63,3 +63,16 @@ mvnw.cmd -pl skin-server -am spring-boot:run -Dspring-boot.run.profiles=local
 - 将 `skin-gateway` 升级为 Spring Cloud Gateway。
 - 按业务域继续拆分 `skin-server`（如 report/chat/user 等）为独立服务。
 - 增加 Dockerfile 与 compose，实现本地一键联调。
+
+## 部署
+
+此仓库现已包含 
+部署框架：
+
+- Docker 本地集群: `deploy/docker/docker-compose.yml`
+- Kubernetes 清单: `deploy/k8s/*.yaml`
+- 部署指南: `deploy/README.md`
+- CI/CD workflows:
+  - `.github/workflows/ci.yml`
+  - `.github/workflows/docker-publish.yml`
+  - `.github/workflows/wechat-upload.yml`

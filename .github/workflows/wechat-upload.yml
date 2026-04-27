@@ -1,0 +1,38 @@
+name: WeChat MiniProgram Upload
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * 1"
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skin-front
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build mp-weixin
+        run: npm run build:mp-weixin
+
+      - name: Install miniprogram-ci
+        run: npm i -D miniprogram-ci
+
+      - name: Upload to WeChat
+        env:
+          WECHAT_APPID: ${{ secrets.WECHAT_APPID }}
+          WECHAT_PRIVATE_KEY: ${{ secrets.WECHAT_PRIVATE_KEY }}
+          WECHAT_CI_ROBOT: ${{ secrets.WECHAT_CI_ROBOT }}
+          WECHAT_CI_VERSION: ${{ github.sha }}
+        run: node ../scripts/wechat-upload.js
