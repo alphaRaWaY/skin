@@ -1,11 +1,13 @@
 package org.skinAI.controller;
 
 import org.skinAI.client.AiServiceClient;
+import org.skinAI.analyzer.ReportAnalyzer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.skinAI.pojo.Result;
 import org.skinAI.pojo.report.Report;
 import org.skinAI.services.ReportService;
-import org.skinAI.utils.TestAnalyzer;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -15,10 +17,19 @@ public class ReportController {
 
     private final AiServiceClient aiServiceClient;
     private final ReportService reportService;
+    private final ReportAnalyzer reportAnalyzer;
+    private final ObjectMapper objectMapper;
 
-    public ReportController(AiServiceClient aiServiceClient, ReportService reportService) {
+    public ReportController(
+            AiServiceClient aiServiceClient,
+            ReportService reportService,
+            ReportAnalyzer reportAnalyzer,
+            ObjectMapper objectMapper
+    ) {
         this.aiServiceClient = aiServiceClient;
         this.reportService = reportService;
+        this.reportAnalyzer = reportAnalyzer;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping
@@ -53,7 +64,25 @@ public class ReportController {
 
     @PostMapping("/analys")
     public Result<Report> analyzeReport(@RequestBody Report report) {
-        Report analyzed = TestAnalyzer.analyzeReport(report);
+        Report analyzed = reportAnalyzer.analyze(report);
+        return enrichAiContent(analyzed);
+    }
+
+    @PostMapping("/analys-upload")
+    public Result<Report> analyzeReportWithImage(
+            @RequestParam("reportJson") String reportJson,
+            @RequestParam("image") MultipartFile image
+    ) {
+        try {
+            Report report = objectMapper.readValue(reportJson, Report.class);
+            Report analyzed = reportAnalyzer.analyze(report, image);
+            return enrichAiContent(analyzed);
+        } catch (Exception ex) {
+            return Result.error("analyze failed: " + ex.getMessage());
+        }
+    }
+
+    private Result<Report> enrichAiContent(Report analyzed) {
         String advicePrompt = String.format(
                 "Generate concise treatment suggestions for a mock skin report. " +
                         "diseaseType=%s; symptoms=%s; age=%s; gender=%s; value=%s. " +

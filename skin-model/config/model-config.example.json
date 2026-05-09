@@ -1,0 +1,6 @@
+{
+  "vit_checkpoint": "src/weights/checkpoint-stage2-46.pth",
+  "best_model": "src/weights/best_model.pt",
+  "mapping": "src/data/disease_concept_mapping_final_v2.json"
+}
+

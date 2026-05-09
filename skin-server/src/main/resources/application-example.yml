@@ -18,5 +18,8 @@ aliyun:
 services:
   ai:
     base-url: http://127.0.0.1:19082
-  lsatrans:
-    base-url: http://127.0.0.1:19090
+  analyzer:
+    mode: mock # mock | python
+  model:
+    base-url: http://127.0.0.1:5000
+    predict-path: /api/v1/predict

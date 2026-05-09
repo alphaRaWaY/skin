@@ -47,6 +47,17 @@ export const analysReport = (data:APIReport) =>{
   })
 }
 
+export const analysReportWithImage = (filePath: string, data: APIReport) => {
+  return uploadFile<APIReport>({
+    url: '/reports/analys-upload',
+    name: 'image',
+    filePath,
+    formData: {
+      reportJson: JSON.stringify(data)
+    }
+  })
+}
+
 export const uploadImageToServer = (file:string) =>{
   return uploadFile<string>({
       url: '/oss/upload',

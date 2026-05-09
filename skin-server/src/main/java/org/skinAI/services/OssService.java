@@ -6,6 +6,7 @@ import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.common.auth.CredentialsProviderFactory;
 import com.aliyun.oss.common.auth.EnvironmentVariableCredentialsProvider;
 import com.aliyun.oss.common.comm.SignVersion;
+import com.aliyun.oss.model.OSSObject;
 import com.aliyun.oss.model.PutObjectRequest;
 import com.aliyuncs.exceptions.ClientException;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,6 +66,18 @@ public class OssService {
             }
         } finally {
             ossClient.shutdown();
+        }
+    }
+
+    public InputStream getObjectStream(String objectKey) {
+        OSS ossClient = createClient();
+        try {
+            String normalizedKey = resolveExistingKey(ossClient, objectKey);
+            OSSObject object = ossClient.getObject(bucketName, normalizedKey);
+            return new AutoCloseableInputStream(object.getObjectContent(), ossClient);
+        } catch (Exception ex) {
+            ossClient.shutdown();
+            throw ex;
         }
     }
 
@@ -132,5 +145,39 @@ public class OssService {
     private String[] buildLegacyKeys(String normalizedKey) {
         String filename = normalizedKey.replaceFirst("^skinAI/", "").replaceFirst("^skin/", "");
         return new String[]{"skin/" + filename, "skinAI/" + filename};
+    }
+
+    private static class AutoCloseableInputStream extends InputStream {
+        private final InputStream delegate;
+        private final OSS client;
+
+        private AutoCloseableInputStream(InputStream delegate, OSS client) {
+            this.delegate = delegate;
+            this.client = client;
+        }
+
+        @Override
+        public int read() throws java.io.IOException {
+            return delegate.read();
+        }
+
+        @Override
+        public int read(byte[] b) throws java.io.IOException {
+            return delegate.read(b);
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws java.io.IOException {
+            return delegate.read(b, off, len);
+        }
+
+        @Override
+        public void close() throws java.io.IOException {
+            try {
+                delegate.close();
+            } finally {
+                client.shutdown();
+            }
+        }
     }
 }

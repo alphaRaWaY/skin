@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { analysReport } from '@/services/reportService'
+import { analysReport, analysReportWithImage } from '@/services/reportService'
 import { useReportStore } from '@/stores/modules/reportStore'
 
 const store = useReportStore()
@@ -29,6 +29,8 @@ const convertToISOTime = (timeString: string) => {
   return date.toISOString().split('.')[0]
 }
 
+const isLocalFilePath = (path: string) => path.startsWith('wxfile://') || path.startsWith('/')
+
 async function handleAnalyze() {
   const localPath = imageList.value[0] || defaultImage
   store.setImageUrl(localPath)
@@ -41,7 +43,9 @@ async function handleAnalyze() {
 
   try {
     uni.showLoading({ title: '正在分析...' })
-    const response = await analysReport(requestData)
+    const response = isLocalFilePath(localPath)
+      ? await analysReportWithImage(localPath, requestData)
+      : await analysReport(requestData)
     store.setResult(response.result)
     uni.hideLoading()
     uni.navigateTo({ url: '/pages/index/sub/result/result' })
@@ -73,3 +77,4 @@ async function handleAnalyze() {
   padding: 20rpx;
 }
 </style>
+

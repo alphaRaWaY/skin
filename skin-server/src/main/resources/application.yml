@@ -19,5 +19,9 @@ server:
 services:
   ai:
     base-url: ${AI_SERVICE_BASE_URL:http://127.0.0.1:19082}
-  lsatrans:
-    base-url: ${LSATRANS_BASE_URL:http://127.0.0.1:19090}
+  analyzer:
+    mode: ${ANALYZER_MODE:mock}
+#    mode: ${ANALYZER_MODE:python}
+  model:
+    base-url: ${MODEL_SERVICE_BASE_URL:http://127.0.0.1:5000}
+    predict-path: ${MODEL_SERVICE_PREDICT_PATH:/api/v1/predict}

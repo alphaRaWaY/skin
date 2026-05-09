@@ -45,9 +45,14 @@ __pycache__/
 *.pyc
 .venv/
 cache/
+*.pth
+*.pt
+skin-model/src/data/*.json
+skin-model/src/data/example.jpg
 
 # ===== Project docs / agent files =====
 AGENTS.md
+skin-front/src/static/design
 
 dump.rdb
 
@@ -58,3 +63,6 @@ dump.rdb
 deploy/docker/.env
 deploy/k8s/secret.yaml
 skin-front/.wechat-private.key
+
+# ===== sync file =====
+scripts/sync-skin-model.ps1
