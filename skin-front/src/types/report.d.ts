@@ -35,4 +35,11 @@ export type APIReport = {
   value: string
   advice: string
   introduction: string
+  conceptScores?: {
+    conceptIndex: number
+    conceptNameEn?: string
+    conceptNameCn?: string
+    score: number
+    rankNo: number
+  }[]
 }

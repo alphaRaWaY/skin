@@ -19,6 +19,13 @@ interface Report {
   value: number;
   advice: string;
   introduction: string;
+  conceptScores?: {
+    conceptIndex: number
+    conceptNameEn?: string
+    conceptNameCn?: string
+    score: number
+    rankNo: number
+  }[];
 }
 
 const report = ref<Report | null>(null);
@@ -132,6 +139,9 @@ const previewImage=(url:string)=>{
 
 
 const diagnosisValues = computed(() => {
+  if (report.value?.conceptScores && report.value.conceptScores.length > 0) {
+    return report.value.conceptScores.map((s) => Number(s.score));
+  }
   if (!report.value || typeof report.value.value !== 'number' && typeof report.value.value !== 'string') return [];
   const raw = String(report.value.value);
   return raw.split(',').map(val => parseFloat(val));
@@ -147,6 +157,15 @@ const diseaseIndicatorsMap: Record<string, string[]> = {
 
 
 const diagnosisValuesWithNames = computed(() => {
+  if (report.value?.conceptScores && report.value.conceptScores.length > 0) {
+    return report.value.conceptScores
+      .slice()
+      .sort((a, b) => (a.rankNo || 0) - (b.rankNo || 0))
+      .map((item) => ({
+        name: item.conceptNameCn || item.conceptNameEn || `概念${item.conceptIndex}`,
+        value: Number(item.score).toFixed(4)
+      }));
+  }
   const values = diagnosisValues.value;
   const names = indicatorNames.value;
   return values.map((val, idx) => ({

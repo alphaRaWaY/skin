@@ -140,7 +140,6 @@ def predict():
     confidence = float(probs[pred_idx].item())
     top_k_scores = outputs["top_k_scores"].squeeze().tolist()
     top_k_indices = outputs["top_k_indices"].squeeze().tolist()
-
     return jsonify(
         {
             "code": 200,

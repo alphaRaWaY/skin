@@ -29,7 +29,15 @@ const convertToISOTime = (timeString: string) => {
   return date.toISOString().split('.')[0]
 }
 
-const isLocalFilePath = (path: string) => path.startsWith('wxfile://') || path.startsWith('/')
+const isLocalFilePath = (path: string) => {
+  if (!path) return false
+  return (
+    path.startsWith('wxfile://') ||
+    path.startsWith('http://tmp/') ||
+    path.startsWith('https://tmp/') ||
+    path.startsWith('/')
+  )
+}
 
 async function handleAnalyze() {
   const localPath = imageList.value[0] || defaultImage
@@ -46,12 +54,19 @@ async function handleAnalyze() {
     const response = isLocalFilePath(localPath)
       ? await analysReportWithImage(localPath, requestData)
       : await analysReport(requestData)
+
+    if (!response || response.code !== 0 || !response.result) {
+      uni.hideLoading()
+      uni.showToast({ title: response?.msg || '分析失败，请检查模型服务连接', icon: 'none' })
+      return
+    }
+
     store.setResult(response.result)
     uni.hideLoading()
     uni.navigateTo({ url: '/pages/index/sub/result/result' })
   } catch (error) {
     uni.hideLoading()
-    uni.showToast({ title: '分析失败', icon: 'none' })
+    uni.showToast({ title: '分析失败，请稍后重试', icon: 'none' })
     console.error(error)
   }
 }

@@ -3,6 +3,7 @@ package org.skinAI.mapper;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.skinAI.pojo.report.ChildReport;
@@ -19,6 +20,7 @@ public interface ReportMapper {
         VALUES (#{username}, #{gender}, #{age}, #{symptoms}, #{duration}, #{treatment}, #{other}, #{checkTime},
                 #{imageUrl}, #{diseaseType}, #{value}, #{advice}, #{introduction},#{userid})
     """)
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     int insertReport(ChildReport childReport);
 
     @Delete("DELETE FROM report WHERE id = #{id} and userid = #{userid}")

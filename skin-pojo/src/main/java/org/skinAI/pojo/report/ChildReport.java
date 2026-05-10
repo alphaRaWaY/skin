@@ -22,6 +22,7 @@ public class ChildReport extends Report {
         this.setValue(report.getValue());
         this.setAdvice(report.getAdvice());
         this.setIntroduction(report.getIntroduction());
+        this.setConceptScores(report.getConceptScores());
 
         // 设置子类特有属性
         this.userid = userid;

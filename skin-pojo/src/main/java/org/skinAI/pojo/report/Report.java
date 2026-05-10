@@ -3,6 +3,7 @@ package org.skinAI.pojo.report;
 
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class Report {
@@ -26,5 +27,6 @@ public class Report {
     private String value;
     private String advice;
     private String introduction;
+    private List<ConceptScore> conceptScores;
 
 }

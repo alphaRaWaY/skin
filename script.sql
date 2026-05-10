@@ -71,6 +71,56 @@ create table report
     engine = InnoDB
     charset = utf8;
 
+create table concept_dictionary
+(
+    id            bigint auto_increment
+        primary key,
+    concept_index int          not null,
+    name_en       varchar(128) null,
+    name_cn       varchar(128) null,
+    create_time   datetime default CURRENT_TIMESTAMP null,
+    update_time   datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
+    constraint uq_concept_dictionary_index
+        unique (concept_index)
+)
+    engine = InnoDB
+    charset = utf8;
+
+create table report_concept_score
+(
+    id              bigint auto_increment
+        primary key,
+    report_id       bigint       not null,
+    concept_index   int          not null,
+    concept_name_en varchar(128) null,
+    concept_name_cn varchar(128) null,
+    score           double       not null,
+    rank_no         int          not null,
+    create_time     datetime default CURRENT_TIMESTAMP null,
+    constraint fk_report_concept_score_report
+        foreign key (report_id) references report (id)
+            on delete cascade
+)
+    engine = InnoDB
+    charset = utf8;
+
+create table disease_concept_mapping
+(
+    id            bigint auto_increment
+        primary key,
+    disease_type  varchar(128) not null,
+    concept_index int          not null,
+    weight        double       not null default 1,
+    create_time   datetime default CURRENT_TIMESTAMP null,
+    update_time   datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
+    constraint uq_disease_concept
+        unique (disease_type, concept_index),
+    constraint fk_disease_concept_dictionary
+        foreign key (concept_index) references concept_dictionary (concept_index)
+)
+    engine = InnoDB
+    charset = utf8;
+
 create definer = root@localhost trigger BeforeUserUpdate_PreventOpenIDChange
     before update
     on user

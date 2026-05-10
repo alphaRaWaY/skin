@@ -49,6 +49,7 @@ cache/
 *.pt
 skin-model/src/data/*.json
 skin-model/src/data/example.jpg
+skin-model/config/model-config.json
 
 # ===== Project docs / agent files =====
 AGENTS.md
@@ -64,5 +65,7 @@ deploy/docker/.env
 deploy/k8s/secret.yaml
 skin-front/.wechat-private.key
 
-# ===== sync file =====
+# ===== scripts file =====
 scripts/sync-skin-model.ps1
+scripts/import_concepts.py
+scripts/import_disease_concept_mapping.py

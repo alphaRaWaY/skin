@@ -1,6 +1,7 @@
 package org.skinAI.analyzer;
 
 import org.skinAI.pojo.report.Report;
+import org.skinAI.pojo.report.ConceptScore;
 import org.skinAI.services.OssService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -13,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -91,7 +93,7 @@ public class PythonReportAnalyzer implements ReportAnalyzer {
         Report output = copyBaseFields(inputReport);
         Object diseaseTypeObj = dataMap.get("diseaseType");
         output.setDiseaseType(diseaseTypeObj == null ? "unknown" : String.valueOf(diseaseTypeObj));
-//        output.setDiseaseType(String.valueOf(dataMap.getOrDefault("diseaseType", "unknown")));
+        output.setConceptScores(parseConceptScores(dataMap));
         output.setValue(buildValueFromModelData(dataMap));
         output.setAdvice("");
         output.setIntroduction("");
@@ -152,6 +154,32 @@ public class PythonReportAnalyzer implements ReportAnalyzer {
         }
 
         return "confidence=" + String.format("%.4f", confidence);
+    }
+
+    private List<ConceptScore> parseConceptScores(Map<?, ?> dataMap) {
+        Object topIndicesObj = dataMap.get("topKIndices");
+        Object topScoresObj = dataMap.get("topKScores");
+        if (!(topIndicesObj instanceof List<?> indices) || !(topScoresObj instanceof List<?> scores)) {
+            return List.of();
+        }
+
+        List<ConceptScore> result = new ArrayList<>();
+        int size = Math.min(indices.size(), scores.size());
+        for (int i = 0; i < size; i++) {
+            Object idxObj = indices.get(i);
+            Object scoreObj = scores.get(i);
+            if (!(idxObj instanceof Number idxNumber) || !(scoreObj instanceof Number scoreNumber)) {
+                continue;
+            }
+
+            ConceptScore item = new ConceptScore();
+            item.setConceptIndex(idxNumber.intValue());
+            item.setScore(scoreNumber.doubleValue());
+            item.setRankNo(i + 1);
+
+            result.add(item);
+        }
+        return result;
     }
 
     private String extractFileName(String objectKey) {

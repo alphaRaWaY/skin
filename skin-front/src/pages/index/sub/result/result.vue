@@ -6,20 +6,55 @@ import { getImage, postReport, uploadImageToServer } from '@/services/reportServ
 const report = useReportStore()
 const displayImage = ref('')
 
-const indicators = computed(() => {
-  return report.resultValue.value
-    ? report.resultValue.value.split(',').map((s) => parseFloat(s.trim()))
-    : []
+type IndicatorItem = {
+  name: string
+  value: string
+}
+
+const parseLegacyTopScores = (value: string): number[] => {
+  if (!value) return []
+  // New format: confidence=0.8734;topScores=0.3282,0.3142,...
+  const match = value.match(/topScores=([^;]+)/i)
+  if (match && match[1]) {
+    return match[1]
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isFinite(n))
+  }
+  // Old format: "3.2,3.0,2.6,4.1"
+  return value
+    .split(',')
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isFinite(n))
+}
+
+const indicators = computed<IndicatorItem[]>(() => {
+  const conceptScores = report.resultValue.conceptScores || []
+  if (conceptScores.length > 0) {
+    return conceptScores
+      .slice()
+      .sort((a, b) => (a.rankNo || 0) - (b.rankNo || 0))
+      .map((item) => ({
+        name: item.conceptNameCn || item.conceptNameEn || `概念${item.conceptIndex}`,
+        value: Number(item.score).toFixed(4)
+      }))
+  }
+
+  const scores = parseLegacyTopScores(report.resultValue.value || '')
+  return scores.slice(0, 8).map((n, idx) => ({
+    name: `指标 ${idx + 1}`,
+    value: n.toFixed(4)
+  }))
 })
 
 const isLocalPath = (value: string) => {
   if (!value) return false
   return (
     value.startsWith('wxfile://') ||
+    value.startsWith('http://tmp/') ||
+    value.startsWith('https://tmp/') ||
     value.startsWith('/static/') ||
-    value.startsWith('/') ||
-    value.startsWith('http://') ||
-    value.startsWith('https://')
+    value.startsWith('/')
   )
 }
 
@@ -37,7 +72,7 @@ const convertToISOTime = (timeString: string) => {
 const abandonResult = () => {
   uni.showModal({
     title: '提示',
-    content: '确认放弃当前检测结果？',
+    content: '放弃本次检测结果并返回首页？',
     success: (res) => {
       if (!res.confirm) return
       report.reset()
@@ -53,7 +88,7 @@ const saveReport = async () => {
   try {
     uni.showLoading({ title: '保存中...' })
 
-    // 只有保存报告时才上传图片到 OSS
+    // Persist to OSS only when saving report.
     if (isLocalPath(imageUrl)) {
       const upload = await uploadImageToServer(imageUrl)
       imageUrl = upload.result
@@ -65,7 +100,13 @@ const saveReport = async () => {
       checkTime: convertToISOTime(data.checkTime)
     }
 
-    await postReport(payload)
+    const resp = await postReport(payload)
+    if (!resp || resp.code !== 0) {
+      uni.hideLoading()
+      uni.showToast({ title: resp?.msg || '保存失败', icon: 'none' })
+      return
+    }
+
     report.setImageUrl(imageUrl)
     uni.hideLoading()
     uni.showToast({ title: '保存成功', icon: 'success' })
@@ -97,14 +138,18 @@ onMounted(async () => {
 
 <template>
   <view class="container">
-    <uni-notice-bar show-icon scrollable text="AI结果仅供健康参考，不替代医生诊断。" />
+    <uni-notice-bar
+      show-icon
+      scrollable
+      text="结果仅供健康参考，不替代医生诊断。"
+    />
 
     <view class="result-box">
       <text class="result-label">检测指标</text>
       <view class="indicator-grid">
         <view v-for="(item, index) in indicators" :key="index" class="indicator-card">
-          <text class="indicator-value">{{ item }}</text>
-          <text class="indicator-index">指标 {{ index + 1 }}</text>
+          <text class="indicator-value">{{ item.value }}</text>
+          <text class="indicator-index">{{ item.name }}</text>
         </view>
       </view>
     </view>
@@ -205,14 +250,15 @@ image {
 }
 
 .indicator-value {
-  font-size: 60rpx;
+  font-size: 56rpx;
   color: #e43d33;
   font-weight: bold;
 }
 
 .indicator-index {
   margin-top: 10rpx;
-  font-size: 28rpx;
+  font-size: 24rpx;
   color: #888;
 }
 </style>
+

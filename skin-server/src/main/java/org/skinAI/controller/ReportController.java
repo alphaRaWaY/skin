@@ -3,13 +3,19 @@ package org.skinAI.controller;
 import org.skinAI.client.AiServiceClient;
 import org.skinAI.analyzer.ReportAnalyzer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.skinAI.mapper.ConceptDictionaryMapper;
 import org.skinAI.pojo.Result;
+import org.skinAI.pojo.report.ConceptScore;
 import org.skinAI.pojo.report.Report;
 import org.skinAI.services.ReportService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -19,17 +25,22 @@ public class ReportController {
     private final ReportService reportService;
     private final ReportAnalyzer reportAnalyzer;
     private final ObjectMapper objectMapper;
+    private final ConceptDictionaryMapper conceptDictionaryMapper;
+    @Value("${services.analyzer.mode:mock}")
+    private String analyzerMode;
 
     public ReportController(
             AiServiceClient aiServiceClient,
             ReportService reportService,
             ReportAnalyzer reportAnalyzer,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            ConceptDictionaryMapper conceptDictionaryMapper
     ) {
         this.aiServiceClient = aiServiceClient;
         this.reportService = reportService;
         this.reportAnalyzer = reportAnalyzer;
         this.objectMapper = objectMapper;
+        this.conceptDictionaryMapper = conceptDictionaryMapper;
     }
 
     @PostMapping
@@ -64,6 +75,9 @@ public class ReportController {
 
     @PostMapping("/analys")
     public Result<Report> analyzeReport(@RequestBody Report report) {
+        if ("python".equalsIgnoreCase(analyzerMode)) {
+            return Result.error("python analyzer requires file upload, please call /api/reports/analys-upload");
+        }
         Report analyzed = reportAnalyzer.analyze(report);
         return enrichAiContent(analyzed);
     }
@@ -83,10 +97,12 @@ public class ReportController {
     }
 
     private Result<Report> enrichAiContent(Report analyzed) {
+        fillConceptNames(analyzed);
         String advicePrompt = String.format(
                 "Generate concise treatment suggestions for a mock skin report. " +
                         "diseaseType=%s; symptoms=%s; age=%s; gender=%s; value=%s. " +
-                        "Do not ask user for more fields. Return plain Chinese.",
+                        "Do not ask user for more fields. Return plain Chinese text only. " +
+                        "Do NOT use markdown, headings, bullet points, asterisks, or numbering syntax.",
                 safe(analyzed.getDiseaseType()),
                 safe(analyzed.getSymptoms()),
                 String.valueOf(analyzed.getAge()),
@@ -95,7 +111,9 @@ public class ReportController {
         );
         String introPrompt = String.format(
                 "Generate a concise disease introduction in Chinese for diseaseType=%s. " +
-                        "Use value=%s as mock severity reference. Do not ask follow-up questions.",
+                        "Use value=%s as mock severity reference. Return plain Chinese text only. " +
+                        "Do NOT use markdown, headings, bullet points, asterisks, or numbering syntax. " +
+                        "Do not ask follow-up questions.",
                 safe(analyzed.getDiseaseType()),
                 safe(analyzed.getValue())
         );
@@ -105,6 +123,42 @@ public class ReportController {
         analyzed.setAdvice(advice);
         analyzed.setIntroduction(introduction);
         return Result.success(analyzed);
+    }
+
+    private void fillConceptNames(Report report) {
+        if (report == null || report.getConceptScores() == null || report.getConceptScores().isEmpty()) {
+            return;
+        }
+        List<Integer> indices = report.getConceptScores().stream()
+                .map(ConceptScore::getConceptIndex)
+                .filter(i -> i != null)
+                .distinct()
+                .collect(Collectors.toList());
+        if (indices.isEmpty()) {
+            return;
+        }
+        List<ConceptScore> dictionaryList = conceptDictionaryMapper.selectByIndices(indices);
+        Map<Integer, ConceptScore> dict = new HashMap<>();
+        for (ConceptScore d : dictionaryList) {
+            if (d.getConceptIndex() != null) {
+                dict.put(d.getConceptIndex(), d);
+            }
+        }
+        for (ConceptScore item : report.getConceptScores()) {
+            if (item.getConceptIndex() == null) {
+                continue;
+            }
+            ConceptScore d = dict.get(item.getConceptIndex());
+            if (d == null) {
+                continue;
+            }
+            if (item.getConceptNameCn() == null || item.getConceptNameCn().isBlank()) {
+                item.setConceptNameCn(d.getConceptNameCn());
+            }
+            if (item.getConceptNameEn() == null || item.getConceptNameEn().isBlank()) {
+                item.setConceptNameEn(d.getConceptNameEn());
+            }
+        }
     }
 
     private String safe(String value) {
