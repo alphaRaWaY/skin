@@ -2,12 +2,14 @@ package org.skinAI.services.Impl;
 
 import com.alibaba.fastjson.JSONObject;
 import org.skinAI.mapper.UserMapper;
-import org.skinAI.pojo.login.LoginResponse;
 import org.skinAI.pojo.User;
+import org.skinAI.pojo.login.LoginResponse;
+import org.skinAI.pojo.login.PwdLoginRequest;
 import org.skinAI.pojo.login.UserProfile;
 import org.skinAI.pojo.login.WxLoginRequest;
 import org.skinAI.services.WXLoginService;
 import org.skinAI.utils.JwtUtil;
+import org.skinAI.utils.Md5Util;
 import org.skinAI.utils.WxDataDecryptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,11 +23,12 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
 @Service
 public class WXLoginServiceImpl implements WXLoginService {
 
     @Autowired
-    private StringRedisTemplate  redisTemplate;
+    private StringRedisTemplate redisTemplate;
 
     @Autowired
     private UserMapper userMapper;
@@ -43,7 +46,6 @@ public class WXLoginServiceImpl implements WXLoginService {
     public LoginResponse loginByWeixinMiniProgram(WxLoginRequest request) {
         User user;
         if ("mock_code".equals(request.getCode())) {
-            // 模拟登录逻辑
             user = userMapper.findByUsername("alphaRaWaY");
             if (user == null) {
                 user = new User();
@@ -54,11 +56,9 @@ public class WXLoginServiceImpl implements WXLoginService {
                 user.setMobile("19070266618");
                 user.setCreateTime(LocalDateTime.now());
                 userMapper.insertUser(user);
-                // 重新查询保证有id
                 user = userMapper.findByUsername("alphaRaWaY");
             }
         } else {
-            // 真实登录逻辑
             JSONObject sessionInfo = getSessionInfoFromWx(request.getCode());
             String openid = sessionInfo.getString("openid");
             String sessionKey = sessionInfo.getString("session_key");
@@ -80,25 +80,52 @@ public class WXLoginServiceImpl implements WXLoginService {
                 user.setNickname(nickname);
                 user.setAvatar(avatar);
                 user.setCreateTime(LocalDateTime.now());
-                //获取电话号码
                 JSONObject phoneInfo = WxDataDecryptor.decryptPhoneNumber(
                         request.getEncryptedData(), request.getIv(), sessionKey
                 );
                 String phoneNumber = phoneInfo.getString("phoneNumber");
                 user.setMobile(phoneNumber);
                 userMapper.insertUser(user);
-                //重新查询保证返回的用户携带id
                 user = userMapper.findByOpenid(openid);
             }
         }
+
+        return buildLoginResponse(user);
+    }
+
+    @Override
+    public LoginResponse loginByPassword(PwdLoginRequest request) {
+        if (request == null || request.getAccount() == null || request.getPassword() == null) {
+            throw new RuntimeException("账号或密码不能为空");
+        }
+
+        String account = request.getAccount().trim();
+        String password = request.getPassword();
+        if (account.isEmpty() || password.isEmpty()) {
+            throw new RuntimeException("账号或密码不能为空");
+        }
+
+        User user = userMapper.findByMobileOrJobNumber(account);
+        if (user == null || user.getPasswordHash() == null || user.getPasswordHash().isEmpty()) {
+            throw new RuntimeException("账号不存在或未设置密码");
+        }
+
+        if (!Md5Util.checkPassword(password, user.getPasswordHash())) {
+            throw new RuntimeException("账号或密码错误");
+        }
+
+        return buildLoginResponse(user);
+    }
+
+    private LoginResponse buildLoginResponse(User user) {
         ValueOperations<String, String> operations = redisTemplate.opsForValue();
-        // 生成token
         String random = UUID.randomUUID().toString();
         Map<String, Object> jwtMap = new HashMap<>();
         jwtMap.put("random", random);
         jwtMap.put("userid", user.getId());
         String token = JwtUtil.genToken(jwtMap);
         operations.set("TOKEN:" + token, String.valueOf(user.getId()), Duration.ofDays(1));
+
         UserProfile profile = new UserProfile();
         profile.setUsername(user.getUsername());
         profile.setMobile(user.getMobile());

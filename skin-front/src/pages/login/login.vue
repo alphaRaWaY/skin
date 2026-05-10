@@ -1,264 +1,240 @@
-// src/pages/login/login.vue
-
-<script setup lang="ts">
-import { onLoad } from '@dcloudio/uni-app'
-import { postLoginWxMin} from '@/services/login'
-import { getFamily } from '@/services/familyService'
+﻿<script setup lang="ts">
+import { ref } from 'vue'
 import { useAuthorizationStore } from '@/stores/modules/userStore'
-import type { LoginResult } from '@/types/user'
+import { postLoginPwd } from '@/services/login'
 
-const goToTest =  ()=>{
-  uni.navigateTo({
-    url: "/pages/test/test"
+type LoginType = 'password' | 'code'
+
+const loginType = ref<LoginType>('password')
+const account = ref('')
+const password = ref('')
+const code = ref('')
+const agreed = ref(false)
+
+const authStore = useAuthorizationStore()
+
+const switchLoginType = (type: LoginType) => {
+  loginType.value = type
+}
+
+const goBack = () => {
+  uni.navigateBack({
+    fail: () => uni.switchTab({ url: '/pages/index/index' })
   })
 }
 
-let code = ''
-// 获取code登录凭证
-onLoad(async () => {
-  try {
-    const res = await uni.login({ provider: 'weixin' })
-    code = res.code
-  } catch (err) {
-    uni.showToast({
-      title: '登录失败',
-      icon: 'error'
-    })
-  }
-})
-
-// 获取用户手机号码（企业写法）
-// const onGetphonenumber: UniHelper.ButtonOnGetphonenumber = async (ev) => {
-//   console.log('微信手机号授权事件', ev)
-//   if (ev.detail?.errMsg !== 'getPhoneNumber:ok') {
-//     uni.showToast({ title: '用户未授权手机号', icon: 'none' })
-//     return
-//   }
-//   uni.showToast({ title: '用户授权手机号成功', icon: 'none' })
-//   const encryptedData = ev.detail!.encryptedData!
-//   const iv = ev.detail!.iv!
-//   const params = {
-//     code,
-//     encryptedData,
-//     iv
-//   }
-//   try {
-//     const res = await postLoginWxMin(params)
-//     if(res.code!=0)throw new Error(res.message)
-//     loginSuccess(res.data)
-//   } catch (error) {
-//     console.log('登录失败', error)
-//     uni.showToast({
-//       title: '登录失败',
-//       icon: 'error'
-//     })
-//   }
-// }
-
-// 模拟手机号码快捷登录
-const onGetphonenumberSimple = async () => {
-  try {
-    const params = {
-      code: 'mock_code',
-      encryptedData: '123456',
-      iv: '123456'
-    }
-    const res = await postLoginWxMin(params)
-    if(res.code)throw new Error(res.msg)
-    console.log('登录成功', res)
-    uni.showToast({
-      title: JSON.stringify(res),
-      icon: 'success'
-    })
-    loginSuccess(res.result)
-  } catch (error) {
-    console.log('登录失败', error)
-    uni.showToast({
-      title: '登录失败',
-      icon: 'error'
-    })
-  }
+const openAgreement = (type: 'user' | 'privacy') => {
+  uni.navigateTo({ url: `/pages/login/policy?type=${type}` })
 }
 
-const loginSuccess = (result: LoginResult) => {
-  // 保存用户信息
+const handleForgotPassword = () => {
+  uni.showToast({ title: '限于平台能力暂不支持此功能', icon: 'none' })
+}
+
+const handleGetCode = () => {
+  uni.showToast({ title: '限于平台能力暂不支持此功能', icon: 'none' })
+}
+
+const validateForm = () => {
+  if (!agreed.value) {
+    uni.showToast({ title: '请先阅读并同意用户协议和隐私协议', icon: 'none' })
+    return false
+  }
+
+  if (!account.value.trim()) {
+    uni.showToast({ title: '请输入账号', icon: 'none' })
+    return false
+  }
+
+  if (loginType.value === 'password' && !password.value.trim()) {
+    uni.showToast({ title: '请输入密码', icon: 'none' })
+    return false
+  }
+
+  if (loginType.value === 'code' && !code.value.trim()) {
+    uni.showToast({ title: '请输入验证码', icon: 'none' })
+    return false
+  }
+
+  return true
+}
+
+const handleLogin = async () => {
+  if (!validateForm()) return
+
+  if (loginType.value === 'code') {
+    uni.showToast({ title: '限于平台能力暂不支持此功能', icon: 'none' })
+    return
+  }
+
   try {
-    const authStore = useAuthorizationStore()
-    authStore.setUserInfo(result)
-    // 提示登录成功
-    uni.showToast({
-      icon: 'success',
-      title: '登录成功'
+    const res = await postLoginPwd({
+      account: account.value.trim(),
+      password: password.value
     })
 
+    if (res.code !== 0 || !res.result) {
+      uni.showToast({ title: res.msg || '登录失败', icon: 'none' })
+      return
+    }
 
-    // 延迟跳转到我的页面
+    authStore.setUserInfo(res.result)
+    uni.showToast({ title: '登录成功', icon: 'success' })
     setTimeout(() => {
-      uni.switchTab({
-        url: '/pages/my/my'
-      })
-    }, 1000)
-  } catch (error) {
-    console.log('存储用户信息失败', error)
-    uni.showToast({
-      title: '存储用户信息失败',
-      icon: 'error'
-    })
+      uni.switchTab({ url: '/pages/my/my' })
+    }, 300)
+  } catch {
+    uni.showToast({ title: '登录失败，请稍后重试', icon: 'none' })
   }
 }
 </script>
 
 <template>
-  <view class="viewport">
-    <view class="logo">
-      <image src="/static/images/logo_icon.jpg"></image>
-    </view>
-    <view class="login">
-      <!-- 企业写法 -->
-     <!-- <button class="button phone" open-type="getPhoneNumber" @getphonenumber="onGetphonenumber"> -->
-     <button class="button phone" open-type="getPhoneNumber" @getphonenumber="onGetphonenumberSimple">
-       <text class="icon icon-phone"></text>
-       手机号快捷登录
-     </button>
-      <view class="extra">
-        <view class="caption">
-          <text>其他登录方式</text>
-        </view>
-        <view class="options">
-          <button @tap="onGetphonenumberSimple">
-            <text class="icon icon-phone" >模拟快捷登录</text>
-          </button>
+  <view class="page">
+    <view class="top-banner">
+      <image class="banner-bg" src="/static/login/login-header.jpg" mode="aspectFill" />
+      <view class="banner-overlay"></view>
+
+      <view class="banner-nav">
+        <view class="back-btn" @tap="goBack">‹</view>
+        <text class="banner-title">灵镜智诊</text>
+        <view class="capsule">
+          <text class="dots">···</text>
+          <view class="dot-ring"></view>
         </view>
       </view>
-      <view class="tips">登录/注册即视为你同意《服务条款》<u @click="goToTest">点我进入测试界面</u></view>
+    </view>
+
+    <view class="content">
+      <image class="logo" src="/static/login/login-logo.png" mode="aspectFill" />
+      <text class="main-title">灵镜智诊</text>
+      <text class="sub-title">皮肤镜智能诊断系统</text>
+
+      <view class="type-switch">
+        <view class="switch-item" :class="{ active: loginType === 'password' }" @tap="switchLoginType('password')">密码登录</view>
+        <view class="switch-item" :class="{ active: loginType === 'code' }" @tap="switchLoginType('code')">验证码登录</view>
+      </view>
+
+      <view class="form-block">
+        <view class="form-row">
+          <text class="label">账号</text>
+          <input v-model="account" class="input" type="text" placeholder="请输入医生工号/手机号" placeholder-class="placeholder" />
+        </view>
+
+        <view v-if="loginType === 'password'" class="form-row">
+          <text class="label">密码</text>
+          <input v-model="password" class="input" type="password" password placeholder="请输入密码" placeholder-class="placeholder" />
+        </view>
+
+        <view v-else class="form-row code-row">
+          <text class="label">验证码</text>
+          <input v-model="code" class="input" type="number" placeholder="请输入验证码" placeholder-class="placeholder" />
+          <button class="code-btn" @tap="handleGetCode">获取验证码</button>
+        </view>
+      </view>
+
+      <text class="forgot" @tap="handleForgotPassword">忘记密码？</text>
+      <button class="login-btn" @tap="handleLogin">登录</button>
+    </view>
+
+    <view class="agreement" @tap="agreed = !agreed">
+      <view class="check-box" :class="{ checked: agreed }">
+        <text v-if="agreed" class="check-mark">✓</text>
+      </view>
+      <text class="agreement-text">
+        我已阅读并同意
+        <text class="link" @tap.stop="openAgreement('user')">《用户协议》</text>
+        和
+        <text class="link" @tap.stop="openAgreement('privacy')">《隐私协议》</text>
+      </text>
     </view>
   </view>
 </template>
 
-<style lang="scss">
-page {
-  height: 100%;
-}
+<style scoped lang="scss">
+$page-width: 750rpx;
+$theme: #8a2b31;
+$theme-light: #f5e6e8;
 
-.viewport {
+.page {
+  width: $page-width;
+  min-height: 100vh;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: 20rpx 40rpx;
+  color: #1f1f1f;
 }
 
-.logo {
-  flex: 1;
-  text-align: center;
-  image {
-    width: 220rpx;
-    height: 220rpx;
-    margin-top: 15vh;
-  }
+.top-banner {
+  position: relative;
+  height: 220rpx;
+  background: linear-gradient(135deg, #7e232a 0%, $theme 65%, #b3404a 100%);
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
-.login {
-  display: flex;
-  flex-direction: column;
-  height: 60vh;
-  padding: 40rpx 20rpx 20rpx;
-
-  .input {
-    width: 100%;
-    height: 80rpx;
-    font-size: 28rpx;
-    border-radius: 72rpx;
-    border: 1px solid #ddd;
-    padding-left: 30rpx;
-    margin-bottom: 20rpx;
-  }
-
-  .button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 80rpx;
-    font-size: 28rpx;
-    border-radius: 72rpx;
-    color: #fff;
-    .icon {
-      font-size: 40rpx;
-      margin-right: 6rpx;
-    }
-  }
-
-  .phone {
-    background-color: #28bb9c;
-  }
-
-  .wechat {
-    background-color: #06c05f;
-  }
-
-  .extra {
-    flex: 1;
-    padding: 70rpx 70rpx 0;
-    .caption {
-      width: 440rpx;
-      line-height: 1;
-      border-top: 1rpx solid #ddd;
-      font-size: 26rpx;
-      color: #999;
-      position: relative;
-      text {
-        transform: translate(-40%);
-        background-color: #fff;
-        position: absolute;
-        top: -12rpx;
-        left: 50%;
-      }
-    }
-
-    .options {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-top: 70rpx;
-      button {
-        padding: 0;
-        background-color: transparent;
-      }
-    }
-
-    .icon {
-      font-size: 24rpx;
-      color: #444;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-
-      &::before {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 80rpx;
-        height: 80rpx;
-        margin-bottom: 6rpx;
-        font-size: 40rpx;
-        border: 1rpx solid #444;
-        border-radius: 50%;
-      }
-    }
-    .icon-weixin::before {
-      border-color: #06c05f;
-      color: #06c05f;
-    }
-  }
-}
-
-.tips {
+.banner-bg {
   position: absolute;
-  bottom: 80rpx;
-  left: 20rpx;
-  right: 20rpx;
-  font-size: 22rpx;
-  color: #999;
-  text-align: center;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.22;
 }
+
+.banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 22% 24%, rgba(255, 255, 255, 0.18), transparent 45%);
+}
+
+.banner-nav {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  padding: 26rpx 26rpx 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.back-btn { width: 56rpx; height: 56rpx; border-radius: 28rpx; color: #fff; font-size: 44rpx; line-height: 50rpx; text-align: center; font-weight: 500; }
+.banner-title { margin-top: 8rpx; color: #fff; font-size: 36rpx; font-weight: 700; letter-spacing: 2rpx; }
+.capsule { margin-top: 2rpx; width: 130rpx; height: 56rpx; border-radius: 30rpx; background: rgba(255, 255, 255, 0.28); display: flex; align-items: center; justify-content: space-around; }
+.dots { color: #fff; font-size: 26rpx; letter-spacing: 2rpx; }
+.dot-ring { width: 22rpx; height: 22rpx; border: 3rpx solid #fff; border-radius: 50%; }
+
+.content {
+  padding: 22rpx 56rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo { width: 150rpx; height: 150rpx; border-radius: 75rpx; border: 4rpx solid rgba(138, 43, 49, 0.2); background: #fff; }
+.main-title { margin-top: 22rpx; font-size: 56rpx; font-weight: 800; color: #161616; }
+.sub-title { margin-top: 10rpx; font-size: 34rpx; color: #4d4d4d; }
+
+.type-switch { margin-top: 42rpx; display: flex; gap: 20rpx; }
+.switch-item { min-width: 198rpx; height: 64rpx; border: 1px solid #d7d7d7; border-radius: 36rpx; font-size: 28rpx; color: #333; display: flex; align-items: center; justify-content: center; background: #fff; }
+.switch-item.active { border-color: #d4a3a8; background: $theme-light; color: #222; font-weight: 600; }
+
+.form-block { width: 100%; margin-top: 44rpx; }
+.form-row { width: 100%; display: flex; align-items: center; gap: 20rpx; margin-bottom: 24rpx; }
+.label { width: 100rpx; font-size: 34rpx; font-weight: 700; color: #111; flex-shrink: 0; }
+.input { flex: 1; height: 82rpx; border: 1px solid #c8c8c8; border-radius: 14rpx; padding: 0 20rpx; font-size: 28rpx; box-sizing: border-box; }
+.placeholder { color: #a0a0a0; font-size: 26rpx; }
+.code-row .input { min-width: 0; }
+.code-btn { width: 160rpx; height: 68rpx; line-height: 68rpx; border-radius: 16rpx; border: 1px solid $theme; color: $theme; background: #fff; font-size: 24rpx; padding: 0; }
+
+.forgot { margin-top: 8rpx; font-size: 26rpx; color: $theme; align-self: center; }
+.login-btn { margin-top: 40rpx; width: 450rpx; height: 88rpx; line-height: 88rpx; background: $theme; color: #fff; border-radius: 24rpx; font-size: 36rpx; font-weight: 700; border: none; }
+.login-btn::after { border: none; }
+
+.agreement { margin-top: auto; padding: 30rpx 56rpx 42rpx; display: flex; align-items: flex-start; gap: 14rpx; }
+.check-box { margin-top: 4rpx; width: 30rpx; height: 30rpx; border: 1px solid #c7c7c7; border-radius: 6rpx; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.check-box.checked { border-color: $theme; background: $theme; }
+.check-mark { color: #fff; font-size: 22rpx; line-height: 1; }
+.agreement-text { font-size: 24rpx; color: #555; line-height: 1.6; }
+.link { color: $theme; }
 </style>
+

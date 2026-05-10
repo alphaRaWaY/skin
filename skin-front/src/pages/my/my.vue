@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useAuthorizationStore } from '@/stores';
-import { getFamily } from '@/services/familyService';
 const serviceTypes = [
   { type: 'history', text: '我的历史', icon: 'test' },
   // { type: 'report', text: '我的报告', icon: 'test1' },
@@ -34,10 +33,6 @@ const logout=()=>{
 // }
 // 获取屏幕边界到安全区域距离
 const { safeAreaInsets } = uni.getSystemInfoSync();
-const testFamily = async()=>{
-  const familyRes = await getFamily();
-  console.log(familyRes);
-}
 </script>
 
 <template>

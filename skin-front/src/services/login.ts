@@ -1,30 +1,29 @@
-import {http} from '@/utils/http'
-import {type LoginResult, } from '@/types/user.d'
-// 定义登录请求参数类型
-type LoginParams = {
+﻿import { http } from '@/utils/http'
+import type { LoginResult } from '@/types/user.d'
+
+type WxLoginParams = {
   code: string
   encryptedData: string
   iv: string
 }
-/**
- * 小程序登录
- * @param data 请求参数
- */
-export const postLoginWxMin = (data: LoginParams) =>{
+
+export type PwdLoginParams = {
+  account: string
+  password: string
+}
+
+export const postLoginWxMin = (data: WxLoginParams) => {
   return http<LoginResult>({
-    method:'POST',
-    url:'/login/wxMin',
+    method: 'POST',
+    url: '/login/wxMin',
     data,
   })
 }
 
-
-// export const postLoginWxMinSimpleAPI =(phoneNumber: string)=>{
-//   return http<UserProfile>({
-//     method:'POST',
-//     url:'/login/wxMin/simple',
-//     data:{
-//       phoneNumber,
-//     }
-//   })
-// }
+export const postLoginPwd = (data: PwdLoginParams) => {
+  return http<LoginResult>({
+    method: 'POST',
+    url: '/login/pwd',
+    data,
+  })
+}

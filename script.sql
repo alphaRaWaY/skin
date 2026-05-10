@@ -150,3 +150,8 @@ create table user_chat_session
 -- ALTER TABLE user_chat_session ADD COLUMN title VARCHAR(128) CHARSET utf8 NULL AFTER chat_id;
 -- ALTER TABLE user_chat_session ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP AFTER created_at;
 -- ALTER TABLE user_chat_session ADD UNIQUE KEY uq_user_chat_session_user_chat (user_id, chat_id);
+
+-- login-by-password migration
+ALTER TABLE user ADD COLUMN IF NOT EXISTS job_number VARCHAR(64) NULL COMMENT '医工号' AFTER mobile;
+ALTER TABLE user ADD COLUMN IF NOT EXISTS password_hash VARCHAR(128) NULL COMMENT '密码摘要' AFTER job_number;
+

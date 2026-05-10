@@ -17,6 +17,14 @@ public interface UserMapper {
     @Select("SELECT * FROM user WHERE id = #{id}")
     User findById(@Param("id") Integer id);
 
-    @Select("SELECT * from user where username= #{yourTestUsername}")
-    User findByUsername(String yourTestUsername);
+    @Select("SELECT * FROM user WHERE username = #{username}")
+    User findByUsername(@Param("username") String username);
+
+    @Select("SELECT * FROM user WHERE (mobile = #{account} OR job_number = #{account}) LIMIT 1")
+    User findByMobileOrJobNumber(@Param("account") String account);
+
+    @Update("UPDATE user SET password_hash = #{passwordHash}, job_number = #{jobNumber} WHERE id = #{id}")
+    int updatePasswordAndJobNumber(@Param("id") Long id,
+                                   @Param("passwordHash") String passwordHash,
+                                   @Param("jobNumber") String jobNumber);
 }

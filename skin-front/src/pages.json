@@ -30,9 +30,9 @@
       }
     },
     {
-      "path": "pages/test/test",
+      "path": "pages/login/policy",
       "style": {
-        "navigationBarTitleText": "test"
+        "navigationBarTitleText": "协议"
       }
     },
     {

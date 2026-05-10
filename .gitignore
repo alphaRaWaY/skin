@@ -69,3 +69,4 @@ skin-front/.wechat-private.key
 scripts/sync-skin-model.ps1
 scripts/import_concepts.py
 scripts/import_disease_concept_mapping.py
+scripts/register_test_user.sql
