@@ -76,3 +76,8 @@ mvnw.cmd -pl skin-server -am spring-boot:run -Dspring-boot.run.profiles=local
   - `.github/workflows/ci.yml`
   - `.github/workflows/docker-publish.yml`
   - `.github/workflows/wechat-upload.yml`
+
+## Doctor V2 Refactor Assets
+- DB schema draft: deploy/sql/doctor_schema_v2.sql`r
+- Backend API draft: deploy/docs/backend-api-v2.md`r
+
