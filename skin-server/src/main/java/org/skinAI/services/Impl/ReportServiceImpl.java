@@ -1,100 +1,202 @@
-// ReportService.java
 package org.skinAI.services.Impl;
 
-import org.skinAI.mapper.ReportMapper;
-import org.skinAI.mapper.ReportConceptMapper;
-import org.skinAI.mapper.ConceptDictionaryMapper;
-import org.skinAI.pojo.report.ChildReport;
+import org.skinAI.mapper.*;
+import org.skinAI.pojo.medical.CaseImage;
+import org.skinAI.pojo.medical.MedicalCase;
+import org.skinAI.pojo.medical.Patient;
 import org.skinAI.pojo.report.ConceptScore;
 import org.skinAI.pojo.report.Report;
 import org.skinAI.services.OssService;
 import org.skinAI.services.ReportService;
 import org.skinAI.utils.ThreadLocalUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @Service
 public class ReportServiceImpl implements ReportService {
 
-    @Autowired
-    private ReportMapper reportMapper;
-    @Autowired
-    private ReportConceptMapper reportConceptMapper;
-    @Autowired
-    private ConceptDictionaryMapper conceptDictionaryMapper;
-    @Autowired
-    private OssService ossService;
+    private final ConceptDictionaryMapper conceptDictionaryMapper;
+    private final OssService ossService;
+    private final PatientMapper patientMapper;
+    private final MedicalCaseMapper medicalCaseMapper;
+    private final CaseAnalysisMapper caseAnalysisMapper;
+    private final CaseConceptScoreMapper caseConceptScoreMapper;
+    private final CaseImageMapper caseImageMapper;
+
+    public ReportServiceImpl(
+            ConceptDictionaryMapper conceptDictionaryMapper,
+            OssService ossService,
+            PatientMapper patientMapper,
+            MedicalCaseMapper medicalCaseMapper,
+            CaseAnalysisMapper caseAnalysisMapper,
+            CaseConceptScoreMapper caseConceptScoreMapper,
+            CaseImageMapper caseImageMapper
+    ) {
+        this.conceptDictionaryMapper = conceptDictionaryMapper;
+        this.ossService = ossService;
+        this.patientMapper = patientMapper;
+        this.medicalCaseMapper = medicalCaseMapper;
+        this.caseAnalysisMapper = caseAnalysisMapper;
+        this.caseConceptScoreMapper = caseConceptScoreMapper;
+        this.caseImageMapper = caseImageMapper;
+    }
 
     @Override
     public int addReport(Report report) {
+        Long doctorId = currentDoctorId();
+        Patient patient = findOrCreatePatient(report, doctorId);
 
-        Map<String,Object> map = ThreadLocalUtil.get();
-        Integer userid = (Integer) map.get("userid");
-        ChildReport childReport = new ChildReport(report,userid);
+        MedicalCase medicalCase = new MedicalCase();
+        medicalCase.setDoctorId(doctorId);
+        medicalCase.setPatientId(patient.getId());
+        medicalCase.setStatus("DONE");
+        medicalCase.setChiefComplaint(report.getSymptoms());
+        medicalCase.setPresentHistory(report.getSymptoms());
+        medicalCase.setTreatmentHistory(report.getTreatment());
+        medicalCase.setDuration(report.getDuration());
+        medicalCase.setExtraNotes(report.getOther());
+        medicalCase.setDiagnosedType(report.getDiseaseType());
+        medicalCase.setAiAdvice(report.getAdvice());
+        medicalCase.setAiIntroduction(report.getIntroduction());
+        medicalCase.setCheckTime(report.getCheckTime() == null ? LocalDateTime.now() : report.getCheckTime());
+        medicalCase.setCaseNo(genCaseNo(doctorId));
+        medicalCaseMapper.insert(medicalCase);
 
-        int affected = reportMapper.insertReport(childReport);
-        if (affected > 0 && childReport.getId() != null && report.getConceptScores() != null && !report.getConceptScores().isEmpty()) {
-            enrichConceptNames(report.getConceptScores());
-            reportConceptMapper.batchInsert(childReport.getId(), report.getConceptScores());
-            for (ConceptScore score : report.getConceptScores()) {
+        List<ConceptScore> conceptScores = report.getConceptScores() == null ? new ArrayList<>() : report.getConceptScores();
+        if (!conceptScores.isEmpty()) {
+            enrichConceptNames(conceptScores);
+        }
+
+        caseAnalysisMapper.insert(
+                medicalCase.getId(),
+                null,
+                report.getDiseaseType(),
+                inferConfidence(conceptScores),
+                "skin-model-v1",
+                toTopkIndicesJson(conceptScores),
+                toTopkScoresJson(conceptScores),
+                null
+        );
+
+        if (!conceptScores.isEmpty()) {
+            caseConceptScoreMapper.batchInsert(medicalCase.getId(), conceptScores);
+            for (ConceptScore score : conceptScores) {
                 if (score.getConceptNameEn() != null || score.getConceptNameCn() != null) {
                     conceptDictionaryMapper.upsert(score.getConceptIndex(), score.getConceptNameEn(), score.getConceptNameCn());
                 }
             }
         }
-        return affected;
+
+        persistCaseImage(medicalCase.getId(), report.getImageUrl());
+        report.setId(medicalCase.getId());
+        return 1;
     }
+
     @Override
     public int deleteReport(Long id) {
-        Map<String,Object> map = ThreadLocalUtil.get();
-        Integer userid = (Integer) map.get("userid");
-        Report report = reportMapper.selectReportById(id, userid);
-        int affected = reportMapper.deleteReportById(id, userid);
-
-        if (affected > 0 && report != null && report.getImageUrl() != null && !report.getImageUrl().isBlank()) {
+        Long doctorId = currentDoctorId();
+        MedicalCase medicalCase = medicalCaseMapper.selectById(id, doctorId);
+        if (medicalCase == null) {
+            return 0;
+        }
+        CaseImage image = caseImageMapper.selectPrimaryByCaseId(id);
+        int affected = medicalCaseMapper.deleteById(id, doctorId);
+        if (affected > 0 && image != null && image.getObjectKey() != null && !image.getObjectKey().isBlank()) {
             try {
-                ossService.deleteFile(report.getImageUrl());
+                ossService.deleteFile(image.getObjectKey());
             } catch (Exception ignored) {
-                // keep DB deletion result as success; object cleanup can be retried manually if needed
             }
         }
         return affected;
     }
+
     @Override
     public Report getReportById(Long id) {
-        Map<String,Object> map = ThreadLocalUtil.get();
-        Integer userid = (Integer) map.get("userid");
-        Report report = reportMapper.selectReportById(id,userid);
-        attachConceptScores(report);
-        return report;
+        MedicalCase medicalCase = medicalCaseMapper.selectById(id, currentDoctorId());
+        if (medicalCase == null) {
+            return null;
+        }
+        return toReport(medicalCase);
     }
+
     @Override
     public List<Report> getAllReports() {
-        Map<String,Object> map = ThreadLocalUtil.get();
-        Integer userid = (Integer) map.get("userid");
-        List<Report> reports = reportMapper.selectAllReports(userid);
-        reports.forEach(this::attachConceptScores);
-        return reports;
+        return medicalCaseMapper.selectByDoctor(currentDoctorId(), null, null, null)
+                .stream()
+                .map(this::toReport)
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<Report> findReportsByUsername(String username) {
-        Map<String,Object> map = ThreadLocalUtil.get();
-        Integer userid = (Integer) map.get("userid");
-        List<Report> reports = reportMapper.selectReportsByUsername(username,userid);
-        reports.forEach(this::attachConceptScores);
-        return reports;
+        return medicalCaseMapper.selectByDoctor(currentDoctorId(), null, null, username)
+                .stream()
+                .map(this::toReport)
+                .collect(Collectors.toList());
     }
 
-    private void attachConceptScores(Report report) {
-        if (report == null || report.getId() == null) {
+    private Report toReport(MedicalCase medicalCase) {
+        Report report = new Report();
+        report.setId(medicalCase.getId());
+        report.setUsername(medicalCase.getPatientName());
+        report.setGender(null);
+        report.setAge(null);
+        report.setSymptoms(medicalCase.getChiefComplaint());
+        report.setDuration(medicalCase.getDuration());
+        report.setTreatment(medicalCase.getTreatmentHistory());
+        report.setOther(medicalCase.getExtraNotes());
+        report.setCheckTime(medicalCase.getCheckTime());
+        report.setDiseaseType(medicalCase.getDiagnosedType());
+        report.setAdvice(medicalCase.getAiAdvice());
+        report.setIntroduction(medicalCase.getAiIntroduction());
+
+        List<ConceptScore> conceptScores = caseConceptScoreMapper.selectByCaseId(medicalCase.getId());
+        report.setConceptScores(conceptScores);
+        report.setValue(toTopkScoresCsv(conceptScores));
+
+        CaseImage image = caseImageMapper.selectPrimaryByCaseId(medicalCase.getId());
+        if (image != null) {
+            report.setImageUrl(image.getObjectKey() != null && !image.getObjectKey().isBlank()
+                    ? image.getObjectKey()
+                    : image.getPublicUrl());
+        }
+        return report;
+    }
+
+    private void persistCaseImage(Long caseId, String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
             return;
         }
-        report.setConceptScores(reportConceptMapper.selectByReportId(report.getId()));
+        CaseImage image = new CaseImage();
+        image.setCaseId(caseId);
+        image.setPrimary(true);
+
+        if (isRemoteUrl(imageUrl)) {
+            image.setObjectKey(ossService.normalizeObjectKey(imageUrl));
+            image.setPublicUrl(imageUrl);
+        } else if (looksLikeObjectKey(imageUrl)) {
+            image.setObjectKey(ossService.normalizeObjectKey(imageUrl));
+            image.setPublicUrl(null);
+        } else {
+            image.setObjectKey("local/" + System.currentTimeMillis());
+            image.setPublicUrl(imageUrl);
+        }
+        caseImageMapper.insert(image);
+    }
+
+    private boolean isRemoteUrl(String value) {
+        return value.startsWith("http://") || value.startsWith("https://");
+    }
+
+    private boolean looksLikeObjectKey(String value) {
+        return !value.startsWith("wxfile://") && !value.startsWith("/") && !value.contains("://");
     }
 
     private void enrichConceptNames(List<ConceptScore> scores) {
@@ -110,7 +212,12 @@ public class ReportServiceImpl implements ReportService {
         Map<Integer, ConceptScore> dictionary = conceptDictionaryMapper.selectByIndices(indices).stream()
                 .collect(Collectors.toMap(ConceptScore::getConceptIndex, x -> x, (a, b) -> a));
 
+        int rank = 1;
         for (ConceptScore score : scores) {
+            if (score.getRankNo() == null || score.getRankNo() <= 0) {
+                score.setRankNo(rank);
+            }
+            rank++;
             if (score.getConceptIndex() == null) {
                 continue;
             }
@@ -126,4 +233,73 @@ public class ReportServiceImpl implements ReportService {
             }
         }
     }
+
+    private Long currentDoctorId() {
+        Map<String, Object> claims = ThreadLocalUtil.get();
+        Object raw = claims.get("userid");
+        if (raw instanceof Number number) {
+            return number.longValue();
+        }
+        throw new RuntimeException("invalid login state");
+    }
+
+    private Patient findOrCreatePatient(Report report, Long doctorId) {
+        String patientName = report.getUsername();
+        if (patientName == null || patientName.isBlank()) {
+            patientName = "Unknown Patient";
+        }
+        Patient existing = patientMapper.selectByDoctorAndName(doctorId, patientName);
+        if (existing != null) {
+            return existing;
+        }
+        Patient patient = new Patient();
+        patient.setDoctorId(doctorId);
+        patient.setPatientName(patientName);
+        patient.setGender(report.getGender());
+        patient.setAge(report.getAge());
+        patient.setNotes("created from diagnosis flow");
+        patientMapper.insert(patient);
+        return patientMapper.selectById(patient.getId(), doctorId);
+    }
+
+    private String genCaseNo(Long doctorId) {
+        String timePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        int rand = ThreadLocalRandom.current().nextInt(1000, 9999);
+        return "CASE-" + doctorId + "-" + timePart + "-" + rand;
+    }
+
+    private Double inferConfidence(List<ConceptScore> conceptScores) {
+        if (conceptScores == null || conceptScores.isEmpty() || conceptScores.get(0).getScore() == null) {
+            return null;
+        }
+        return conceptScores.get(0).getScore();
+    }
+
+    private String toTopkIndicesJson(List<ConceptScore> conceptScores) {
+        if (conceptScores == null || conceptScores.isEmpty()) {
+            return "[]";
+        }
+        return conceptScores.stream()
+                .map(s -> String.valueOf(s.getConceptIndex()))
+                .collect(Collectors.joining(",", "[", "]"));
+    }
+
+    private String toTopkScoresJson(List<ConceptScore> conceptScores) {
+        if (conceptScores == null || conceptScores.isEmpty()) {
+            return "[]";
+        }
+        return conceptScores.stream()
+                .map(s -> s.getScore() == null ? "0" : String.valueOf(s.getScore()))
+                .collect(Collectors.joining(",", "[", "]"));
+    }
+
+    private String toTopkScoresCsv(List<ConceptScore> conceptScores) {
+        if (conceptScores == null || conceptScores.isEmpty()) {
+            return "";
+        }
+        return conceptScores.stream()
+                .map(s -> s.getScore() == null ? "0" : String.valueOf(s.getScore()))
+                .collect(Collectors.joining(","));
+    }
 }
+

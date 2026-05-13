@@ -20,6 +20,7 @@ export type UserProfile = {
   nickname: string
   mobile: string
   avatar: string
+  jobNumber?: string
 }
 // 登录返回的数据类型
 export type LoginResult = {

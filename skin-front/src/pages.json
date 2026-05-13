@@ -1,125 +1,157 @@
 ﻿{
-  "easycom": {
-    "autoscan": true,
-    "custom": {
-      "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
-    }
-  },
-  "pages": [
-    {
-      "path": "pages/index/index",
-      "style": {
-        "navigationBarTitleText": "首页",
-        "navigationStyle": "custom",
-        "navigationBarTextStyle": "white",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/my/my",
-      "style": {
-        "navigationStyle": "custom",
-        "navigationBarTextStyle": "white",
-        "navigationBarTitleText": "我的"
-      }
-    },
-    {
-      "path": "pages/login/login",
-      "style": {
-        "navigationBarTitleText": "登录"
-      }
-    },
-    {
-      "path": "pages/login/policy",
-      "style": {
-        "navigationBarTitleText": "协议"
-      }
-    },
-    {
-      "path": "pages/chat/chat",
-      "style": {
-        "navigationBarTitleText": "AI问诊"
-      }
-    }
-  ],
-  "tabBar": {
-    "color": "#666666",
-    "selectedColor": "#28bb9c",
-    "backgroundColor": "#ffffff",
-    "borderStyle": "black",
-    "list": [
-      {
-        "pagePath": "pages/index/index",
-        "text": "首页",
-        "iconPath": "static/tabs/home_default.png",
-        "selectedIconPath": "static/tabs/home_selected.png"
-      },
-      {
-        "pagePath": "pages/chat/chat",
-        "text": "AI问诊",
-        "iconPath": "static/tabs/category_default.png",
-        "selectedIconPath": "static/tabs/category_selected.png"
-      },
-      {
-        "pagePath": "pages/my/my",
-        "text": "我的",
-        "iconPath": "static/tabs/user_default.png",
-        "selectedIconPath": "static/tabs/user_selected.png"
-      }
-    ]
-  },
-  "globalStyle": {
-    "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "智能皮肤问诊",
-    "navigationBarBackgroundColor": "#F8F8F8",
-    "backgroundColor": "#F8F8F8"
-  },
-  "subPackages": [
-    {
-      "root": "pages/index/sub",
-      "pages": [
-        {
-          "path": "upload/upload",
-          "style": {
-            "navigationBarTitleText": "上传图片"
-          }
-        },
-        {
-          "path": "result/result",
-          "style": {
-            "navigationBarTitleText": "检测结果"
-          }
-        }
-      ]
-    },
-    {
-      "root": "pages/my/sub",
-      "pages": [
-        {
-          "path": "history",
-          "style": {
-            "navigationBarTitleText": "历史报告"
-          }
-        },
-        {
-          "path": "report",
-          "style": {
-            "navigationBarTitleText": "我的报告"
-          }
-        },
-        {
-          "path": "family",
-          "style": {
-            "navigationBarTitleText": "我的家人"
-          }
-        },
-        {
-          "path": "reportDetail/reportDetail",
-          "style": {
-            "navigationBarTitleText": "报告详情"
-          }
-        }
-      ]
-    }
-  ]
+    "easycom":  {
+                    "autoscan":  true,
+                    "custom":  {
+                                   "^uni-(.*)":  "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+                               }
+                },
+    "pages":  [
+                  {
+                      "path":  "pages/index/index",
+                      "style":  {
+                                    "navigationBarTitleText":  "首页",
+                                    "navigationStyle":  "custom",
+                                    "navigationBarTextStyle":  "white",
+                                    "enablePullDownRefresh":  true
+                                }
+                  },
+                  {
+                      "path":  "pages/case/records",
+                      "style":  {
+                                    "navigationBarTitleText":  "诊疗记录",
+                                    "navigationStyle":  "custom",
+                                    "navigationBarTextStyle":  "white"
+                                }
+                  },
+                  {
+                      "path":  "pages/chat/chat",
+                      "style":  {
+                                    "navigationBarTitleText":  "AI问诊"
+                                }
+                  },
+                  {
+                      "path":  "pages/my/my",
+                      "style":  {
+                                    "navigationStyle":  "custom",
+                                    "navigationBarTextStyle":  "white",
+                                    "navigationBarTitleText":  "我的"
+                                }
+                  },
+                  {
+                      "path":  "pages/login/login",
+                      "style":  {
+                                    "navigationBarTitleText":  "登录"
+                                }
+                  },
+                  {
+                      "path":  "pages/login/policy",
+                      "style":  {
+                                    "navigationBarTitleText":  "协议"
+                                }
+                  }
+              ],
+    "tabBar":  {
+                   "color":  "#5e5e5e",
+                   "selectedColor":  "#8A2B31",
+                   "backgroundColor":  "#ffffff",
+                   "borderStyle":  "black",
+                   "list":  [
+                                {
+                                    "pagePath":  "pages/index/index",
+                                    "text":  "首页",
+                                    "iconPath":  "static/tabs-doctor/home.png",
+                                    "selectedIconPath":  "static/tabs-doctor/home.png"
+                                },
+                                {
+                                    "pagePath":  "pages/case/records",
+                                    "text":  "诊疗记录",
+                                    "iconPath":  "static/tabs-doctor/record.png",
+                                    "selectedIconPath":  "static/tabs-doctor/record.png"
+                                },
+                                {
+                                    "pagePath":  "pages/chat/chat",
+                                    "text":  "AI问诊",
+                                    "iconPath":  "static/tabs-doctor/ai.png",
+                                    "selectedIconPath":  "static/tabs-doctor/ai.png"
+                                },
+                                {
+                                    "pagePath":  "pages/my/my",
+                                    "text":  "我的",
+                                    "iconPath":  "static/tabs-doctor/my.png",
+                                    "selectedIconPath":  "static/tabs-doctor/my.png"
+                                }
+                            ]
+               },
+    "globalStyle":  {
+                        "navigationBarTextStyle":  "black",
+                        "navigationBarTitleText":  "灵镜智诊",
+                        "navigationBarBackgroundColor":  "#F8F8F8",
+                        "backgroundColor":  "#F8F8F8"
+                    },
+    "subPackages":  [
+                        {
+                            "root":  "pages/index/sub",
+                            "pages":  [
+                                          {
+                                              "path":  "upload/upload",
+                                              "style":  {
+                                                            "navigationBarTitleText":  "上传照片",
+                                                            "navigationStyle":  "custom",
+                                                            "navigationBarTextStyle":  "white"
+                                                        }
+                                          },
+                                          {
+                                              "path":  "result/result",
+                                              "style":  {
+                                                            "navigationBarTitleText":  "检测结果"
+                                                        }
+                                          }
+                                      ]
+                        },
+                        {
+                            "root":  "pages/my/sub",
+                            "pages":  [
+                                          {
+                                              "path":  "history",
+                                              "style":  {
+                                                            "navigationBarTitleText":  "历史报告"
+                                                        }
+                                          },
+                                          {
+                                              "path":  "report",
+                                              "style":  {
+                                                            "navigationBarTitleText":  "我的报告"
+                                                        }
+                                          },
+                                          {
+                                              "path":  "family",
+                                              "style":  {
+                                                            "navigationBarTitleText":  "我的家人"
+                                                        }
+                                          },
+                                          {
+                                              "path":  "reportDetail/reportDetail",
+                                              "style":  {
+                                                            "navigationBarTitleText":  "报告详情"
+                                                        }
+                                          },
+                                          {
+                                              "path":  "settings",
+                                              "style":  {
+                                                            "navigationBarTitleText":  "设置",
+                                                            "navigationStyle":  "custom",
+                                                            "navigationBarTextStyle":  "white"
+                                                        }
+                                          },
+                                          {
+                                              "path":  "patient",
+                                              "style":  {
+                                                            "navigationBarTitleText":  "患者管理",
+                                                            "navigationStyle":  "custom",
+                                                            "navigationBarTextStyle":  "white"
+                                                        }
+                                          }
+                                      ]
+                        }
+                    ]
 }

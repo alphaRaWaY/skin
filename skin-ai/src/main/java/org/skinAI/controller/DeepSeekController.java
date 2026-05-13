@@ -49,7 +49,7 @@ public class DeepSeekController {
     }
 
     @DeleteMapping("/chat/{chatId}")
-    public Result deleteUserChats(@PathVariable String chatId) {
+    public Result deleteUserChats(@PathVariable("chatId") String chatId) {
         Map<String, Object> map = ThreadLocalUtil.get();
         Integer userid = (Integer) map.get("userid");
         deepSeekService.deleteUserChats(userid, chatId);
@@ -57,7 +57,7 @@ public class DeepSeekController {
     }
 
     @PatchMapping("/chat/{chatId}/title")
-    public Result updateChatTitle(@PathVariable String chatId, @RequestBody ChatSessionTitleRequest request) {
+    public Result updateChatTitle(@PathVariable("chatId") String chatId, @RequestBody ChatSessionTitleRequest request) {
         Map<String, Object> map = ThreadLocalUtil.get();
         Integer userid = (Integer) map.get("userid");
         deepSeekService.renameUserChat(userid, chatId, request.getTitle());
@@ -65,7 +65,7 @@ public class DeepSeekController {
     }
 
     @GetMapping("/chat/{chatId}")
-    public Result<List<ChatMessage>> getChatDetails(@PathVariable String chatId) {
+    public Result<List<ChatMessage>> getChatDetails(@PathVariable("chatId") String chatId) {
         return Result.success(deepSeekService.getChatDetails(chatId));
     }
 

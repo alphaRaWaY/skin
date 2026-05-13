@@ -9,7 +9,8 @@ export const useAuthorizationStore = defineStore('Authorization', {
       username: '',
       nickname: '',
       mobile: '',
-      avatar: ''
+      avatar: '',
+      jobNumber: ''
     }
   }),
   actions: {
@@ -25,7 +26,8 @@ export const useAuthorizationStore = defineStore('Authorization', {
         username: '',
         nickname: '',
         mobile: '',
-        avatar: ''
+        avatar: '',
+        jobNumber: ''
       }
     }
   },

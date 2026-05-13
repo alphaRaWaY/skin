@@ -1,267 +1,175 @@
-<script lang="ts" setup>
-import { ref, onMounted } from "vue";
-import { getReports, searchReports } from "@/services/reportService";
-import { onPullDownRefresh } from "@dcloudio/uni-app";
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { onPullDownRefresh } from '@dcloudio/uni-app'
+import { getMedicalCases, type MedicalCaseItem } from '@/services/medicalCaseService'
 
+const loading = ref(false)
+const keyword = ref('')
+const list = ref<MedicalCaseItem[]>([])
 
+const filteredList = computed(() => {
+  const key = keyword.value.trim().toLowerCase()
+  if (!key) return list.value
+  return list.value.filter((item) => {
+    const text = `${item.patientName || ''} ${item.caseNo || ''} ${item.diagnosedType || ''} ${item.chiefComplaint || ''}`.toLowerCase()
+    return text.includes(key)
+  })
+})
 
-interface Report {
-  id: number;
-  username: string;
-  gender: string;
-  age: number;
-  symptoms: string;
-  duration: string;
-  treatment: string;
-  other: string;
-  checkTime: string;
-  imageUrl: string;
-  diseaseType: string;
-  value: number;
-  advice: string;
-  introduction: string;
+const formatTime = (value?: string) => {
+  if (!value) return '--'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  const y = date.getFullYear()
+  const m = `${date.getMonth() + 1}`.padStart(2, '0')
+  const d = `${date.getDate()}`.padStart(2, '0')
+  const hh = `${date.getHours()}`.padStart(2, '0')
+  const mm = `${date.getMinutes()}`.padStart(2, '0')
+  return `${y}-${m}-${d} ${hh}:${mm}`
 }
 
-interface ApiResponse {
-  code: number;
-  msg: string;
-  result: Report[];
+const statusText = (status?: string) => {
+  if (status === 'PENDING') return '待处理'
+  if (status === 'IN_PROGRESS') return '进行中'
+  if (status === 'FOLLOWUP') return '待复查'
+  if (status === 'DONE') return '已完成'
+  if (status === 'CLOSED') return '已关闭'
+  return status || '--'
 }
 
-const reports = ref<Report[]>([]);
-const loading = ref(false);
-
-const searchKeyword = ref("");
-
-// 筛选后的报告列表
-const filteredReports = async() =>{
+const fetchCases = async () => {
+  loading.value = true
   try {
-    loading.value = true;
-    const response: ApiResponse = await searchReports(searchKeyword.value);
-    if (response.code === 0) {
-      reports.value = response.result;
+    const res = await getMedicalCases()
+    if (res.code === 0 && Array.isArray(res.result)) {
+      list.value = res.result
     } else {
-      uni.showToast({
-        title: response.msg || '获取报告失败',
-        icon: 'none'
-      });
+      uni.showToast({ title: res.msg || '获取诊疗记录失败', icon: 'none' })
     }
-  } catch (error) {
-    console.error('获取报告出错:', error);
-    uni.showToast({
-      title: '获取报告出错',
-      icon: 'none'
-    });
+  } catch {
+    uni.showToast({ title: '获取诊疗记录失败', icon: 'none' })
   } finally {
-    loading.value = false;
-    uni.stopPullDownRefresh();
+    loading.value = false
+    uni.stopPullDownRefresh()
   }
 }
 
+const openDetail = (id: number) => {
+  uni.navigateTo({ url: `/pages/my/sub/reportDetail/reportDetail?id=${id}` })
+}
 
-
-const fetchReports = async () => {
-  try {
-    loading.value = true;
-    const response: ApiResponse = await getReports();
-    if (response.code === 0) {
-      reports.value = response.result;
-    } else {
-      uni.showToast({
-        title: response.msg || '获取报告失败',
-        icon: 'none'
-      });
-    }
-  } catch (error) {
-    console.error('获取报告出错:', error);
-    uni.showToast({
-      title: '获取报告出错',
-      icon: 'none'
-    });
-  } finally {
-    loading.value = false;
-    uni.stopPullDownRefresh();
-  }
-};
-
-const navigateToDetail = (id: number) => {
-  uni.navigateTo({
-    url: `/pages/my/sub/reportDetail/reportDetail?id=${id}`
-  });
-};
-
-// 下拉刷新
-onPullDownRefresh(() => {
-  fetchReports();
-});
-
-// 页面加载时获取数据
-onMounted(() => {
-  fetchReports();
-});
+onPullDownRefresh(fetchCases)
+onMounted(fetchCases)
 </script>
 
 <template>
-  <view class="container">
+  <view class="page">
     <view class="header">
-      <text class="title">检查报告列表</text>
-      <button class="refresh-btn" @click="fetchReports" :disabled="loading">
-        {{ loading ? '加载中...' : '刷新' }}
-      </button>
+      <text class="title">诊疗记录</text>
     </view>
 
-    <view class="search-bar">
-      <input
-        class="search-input"
-        v-model="searchKeyword"
-        placeholder="输入姓名"
-        confirm-type="search"
-      />
-      <button @click="filteredReports">筛选</button>
+    <view class="search">
+      <input v-model="keyword" class="search-input" placeholder="搜索患者/病历号/诊断类型" />
     </view>
 
+    <view v-if="loading" class="state">加载中...</view>
+    <view v-else-if="filteredList.length === 0" class="state">暂无诊疗记录</view>
 
-    <view v-if="reports.length === 0 && !loading" class="empty">
-      <text>暂无报告数据</text>
-    </view>
-
-    <scroll-view v-else scroll-y class="report-list" refresher-enabled @refresherrefresh="fetchReports">
+    <scroll-view v-else scroll-y class="list">
       <view
-        v-for="report in reports"
-        :key="report.id"
-        class="report-card"
-        @click="navigateToDetail(report.id)"
+        v-for="item in filteredList"
+        :key="item.id"
+        class="card"
+        @tap="openDetail(item.id)"
       >
-        <view class="report-header">
-          <text class="patient-name">{{ report.username }}</text>
-          <text class="patient-info">{{ report.gender }} {{ report.age }}岁</text>
+        <view class="row">
+          <text class="name">{{ item.patientName || '未命名患者' }}</text>
+          <text class="status">{{ statusText(item.status) }}</text>
         </view>
-
-        <view class="report-content">
-          <view class="info-row">
-            <text class="label">症状:</text>
-            <text class="value">{{ report.symptoms }}</text>
-          </view>
-
-          <view class="info-row">
-            <text class="label">疾病类型:</text>
-            <text class="value">{{ report.diseaseType }}</text>
-          </view>
-
-          <view class="info-row">
-            <text class="label">检查时间:</text>
-            <text class="value">{{ new Date(report.checkTime).toLocaleString() }}</text>
-          </view>
-        </view>
+        <text class="case-no">病历号：{{ item.caseNo || '--' }}</text>
+        <text class="type">诊断类型：{{ item.diagnosedType || '未诊断' }}</text>
+        <text class="complaint">主诉：{{ item.chiefComplaint || '无' }}</text>
+        <text class="time">就诊时间：{{ formatTime(item.checkTime || item.createdAt) }}</text>
       </view>
     </scroll-view>
   </view>
 </template>
 
-<style scoped>
-.container {
-  padding: 20rpx;
-  background-color: #f5f5f5;
+<style scoped lang="scss">
+.page {
   min-height: 100vh;
+  background: #f5f5f7;
+  padding: 20rpx;
+  box-sizing: border-box;
 }
 
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30rpx;
+  margin-bottom: 16rpx;
 }
 
 .title {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #333;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #222;
 }
 
-.refresh-btn {
-  background-color: #4a90e2;
-  color: white;
-  font-size: 28rpx;
-  padding: 10rpx 20rpx;
-  border-radius: 10rpx;
-}
-
-.empty {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200rpx;
-  color: #999;
-  font-size: 32rpx;
-}
-
-.report-list {
-  height: calc(100vh - 120rpx);
-}
-
-.report-card {
-  background-color: white;
-  border-radius: 16rpx;
-  padding: 30rpx;
-  margin-bottom: 30rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
-}
-
-.report-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20rpx;
-  padding-bottom: 20rpx;
-  border-bottom: 1rpx solid #eee;
-}
-
-.patient-name {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #333;
-}
-
-.patient-info {
-  font-size: 28rpx;
-  color: #666;
-}
-
-.report-content {
-  margin-bottom: 20rpx;
-}
-
-.info-row {
-  display: flex;
-  margin-bottom: 15rpx;
-}
-
-.label {
-  width: 160rpx;
-  font-size: 28rpx;
-  color: #666;
-}
-
-.value {
-  flex: 1;
-  font-size: 28rpx;
-  color: #333;
-}
-
-.search-bar {
-  margin-bottom: 20rpx;
-  padding: 0 10rpx;
+.search {
+  margin-bottom: 16rpx;
 }
 
 .search-input {
-  width: 100%;
-  height: 70rpx;
-  background-color: #fff;
+  height: 72rpx;
+  border: 1rpx solid #d8d8dd;
   border-radius: 12rpx;
   padding: 0 20rpx;
   font-size: 28rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
-  border: 1rpx solid #ccc;
+  background: #fff;
 }
 
+.state {
+  text-align: center;
+  color: #888;
+  font-size: 28rpx;
+  padding: 80rpx 0;
+}
+
+.list {
+  height: calc(100vh - 180rpx);
+}
+
+.card {
+  background: #fff;
+  border: 1rpx solid #e0e0e6;
+  border-radius: 14rpx;
+  padding: 18rpx;
+  margin-bottom: 14rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #8a2b31;
+}
+
+.status {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.case-no,
+.type,
+.complaint,
+.time {
+  font-size: 26rpx;
+  color: #444;
+}
 </style>

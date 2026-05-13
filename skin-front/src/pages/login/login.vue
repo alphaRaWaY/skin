@@ -17,12 +17,6 @@ const switchLoginType = (type: LoginType) => {
   loginType.value = type
 }
 
-const goBack = () => {
-  uni.navigateBack({
-    fail: () => uni.switchTab({ url: '/pages/index/index' })
-  })
-}
-
 const openAgreement = (type: 'user' | 'privacy') => {
   uni.navigateTo({ url: `/pages/login/policy?type=${type}` })
 }
@@ -70,7 +64,7 @@ const handleLogin = async () => {
   try {
     const res = await postLoginPwd({
       account: account.value.trim(),
-      password: password.value
+      password: password.value,
     })
 
     if (res.code !== 0 || !res.result) {
@@ -94,15 +88,7 @@ const handleLogin = async () => {
     <view class="top-banner">
       <image class="banner-bg" src="/static/login/login-header.jpg" mode="aspectFill" />
       <view class="banner-overlay"></view>
-
-      <view class="banner-nav">
-        <view class="back-btn" @tap="goBack">‹</view>
-        <text class="banner-title">灵镜智诊</text>
-        <view class="capsule">
-          <text class="dots">···</text>
-          <view class="dot-ring"></view>
-        </view>
-      </view>
+      <text class="banner-title">灵镜智诊</text>
     </view>
 
     <view class="content">
@@ -171,6 +157,9 @@ $theme-light: #f5e6e8;
   background: linear-gradient(135deg, #7e232a 0%, $theme 65%, #b3404a 100%);
   overflow: hidden;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .banner-bg {
@@ -187,21 +176,14 @@ $theme-light: #f5e6e8;
   background: radial-gradient(circle at 22% 24%, rgba(255, 255, 255, 0.18), transparent 45%);
 }
 
-.banner-nav {
+.banner-title {
   position: relative;
   z-index: 2;
-  height: 100%;
-  padding: 26rpx 26rpx 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  color: #fff;
+  font-size: 40rpx;
+  font-weight: 700;
+  letter-spacing: 2rpx;
 }
-
-.back-btn { width: 56rpx; height: 56rpx; border-radius: 28rpx; color: #fff; font-size: 44rpx; line-height: 50rpx; text-align: center; font-weight: 500; }
-.banner-title { margin-top: 8rpx; color: #fff; font-size: 36rpx; font-weight: 700; letter-spacing: 2rpx; }
-.capsule { margin-top: 2rpx; width: 130rpx; height: 56rpx; border-radius: 30rpx; background: rgba(255, 255, 255, 0.28); display: flex; align-items: center; justify-content: space-around; }
-.dots { color: #fff; font-size: 26rpx; letter-spacing: 2rpx; }
-.dot-ring { width: 22rpx; height: 22rpx; border: 3rpx solid #fff; border-radius: 50%; }
 
 .content {
   padding: 22rpx 56rpx 0;
@@ -237,4 +219,3 @@ $theme-light: #f5e6e8;
 .agreement-text { font-size: 24rpx; color: #555; line-height: 1.6; }
 .link { color: $theme; }
 </style>
-

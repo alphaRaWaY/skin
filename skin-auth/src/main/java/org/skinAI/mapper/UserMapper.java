@@ -27,4 +27,21 @@ public interface UserMapper {
     int updatePasswordAndJobNumber(@Param("id") Long id,
                                    @Param("passwordHash") String passwordHash,
                                    @Param("jobNumber") String jobNumber);
+
+    @Update("""
+            UPDATE user
+            SET nickname = #{nickname},
+                mobile = #{mobile},
+                avatar = #{avatar},
+                job_number = #{jobNumber}
+            WHERE id = #{id}
+            """)
+    int updateProfileById(User user);
+
+    @Update("""
+            UPDATE user
+            SET password_hash = #{passwordHash}
+            WHERE id = #{id}
+            """)
+    int updatePasswordById(@Param("id") Long id, @Param("passwordHash") String passwordHash);
 }

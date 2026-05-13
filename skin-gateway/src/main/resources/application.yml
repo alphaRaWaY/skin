@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 19080
 
 spring:
@@ -10,7 +10,7 @@ spring:
         - id: skin-auth
           uri: ${AUTH_SERVICE_URI:http://127.0.0.1:19081}
           predicates:
-            - Path=/api/login/**,/api/public/**,/api/hello/**
+            - Path=/api/login/**,/api/public/**,/api/hello/**,/api/account/**
         - id: skin-ai
           uri: ${AI_SERVICE_URI:http://127.0.0.1:19082}
           predicates:
@@ -18,8 +18,9 @@ spring:
         - id: skin-core
           uri: ${CORE_SERVICE_URI:http://127.0.0.1:19083}
           predicates:
-            - Path=/api/reports/**,/api/family/**,/api/oss/**
+            - Path=/api/oss/**,/api/patients/**,/api/cases/**,/api/announcements/**,/api/dashboard/**
         - id: skin-lsatrans
           uri: ${LSATRANS_SERVICE_URI:http://127.0.0.1:19090}
           predicates:
             - Path=/api/lsatrans/**
+

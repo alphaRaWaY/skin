@@ -1,4 +1,4 @@
-import { useAuthorizationStore } from '@/stores/modules/userStore'
+﻿import { useAuthorizationStore } from '@/stores/modules/userStore'
 import { API_BASE_URL } from '@/config/env'
 
 const httpInterceptor = {
@@ -31,6 +31,10 @@ interface Data<T> {
   result: T
 }
 
+type UploadWithProgressOption = UniApp.UploadFileOption & {
+  onProgress?: (progress: number, totalBytesSent: number, totalBytesExpectedToSend: number) => void
+}
+
 export const http = <T>(options: UniApp.RequestOptions) => {
   return new Promise<Data<T>>((resolve, reject) => {
     uni.request({
@@ -42,11 +46,12 @@ export const http = <T>(options: UniApp.RequestOptions) => {
             username: '',
             nickname: '',
             mobile: '',
-            avatar: ''
+            avatar: '',
+            jobNumber: '',
           }
           authStore.token = ''
           uni.navigateTo({
-            url: '/pages/login/login'
+            url: '/pages/login/login',
           })
           reject(res)
         } else if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -54,7 +59,7 @@ export const http = <T>(options: UniApp.RequestOptions) => {
         } else {
           uni.showToast({
             icon: 'error',
-            title: (res.data as Data<T>).msg || '请求错误'
+            title: (res.data as Data<T>).msg || '请求失败',
           })
           reject(res)
         }
@@ -62,18 +67,19 @@ export const http = <T>(options: UniApp.RequestOptions) => {
       fail(err) {
         uni.showToast({
           icon: 'error',
-          title: '网络错误'
+          title: '请求失败',
         })
         reject(err)
-      }
+      },
     })
   })
 }
 
-export const uploadFile = <T>(options: UniApp.UploadFileOption) => {
+export const uploadFile = <T>(options: UploadWithProgressOption) => {
   return new Promise<Data<T>>((resolve, reject) => {
-    uni.uploadFile({
-      ...options,
+    const { onProgress, ...uploadOptions } = options
+    const task = uni.uploadFile({
+      ...uploadOptions,
       success(res) {
         let data: Data<T>
         try {
@@ -81,7 +87,7 @@ export const uploadFile = <T>(options: UniApp.UploadFileOption) => {
         } catch (error) {
           uni.showToast({
             icon: 'error',
-            title: '响应数据解析错误'
+            title: '解析响应失败',
           })
           return reject(error)
         }
@@ -92,7 +98,8 @@ export const uploadFile = <T>(options: UniApp.UploadFileOption) => {
             username: '',
             nickname: '',
             mobile: '',
-            avatar: ''
+            avatar: '',
+            jobNumber: '',
           }
           authStore.token = ''
           uni.navigateTo({ url: '/pages/login/login' })
@@ -102,7 +109,7 @@ export const uploadFile = <T>(options: UniApp.UploadFileOption) => {
         } else {
           uni.showToast({
             icon: 'error',
-            title: data.msg || '上传失败'
+            title: data.msg || '上传失败',
           })
           reject(res)
         }
@@ -110,10 +117,16 @@ export const uploadFile = <T>(options: UniApp.UploadFileOption) => {
       fail(err) {
         uni.showToast({
           icon: 'error',
-          title: '上传失败'
+          title: '上传失败',
         })
         reject(err)
-      }
+      },
     })
+
+    if (onProgress && task && typeof task.onProgressUpdate === 'function') {
+      task.onProgressUpdate((res) => {
+        onProgress(res.progress, res.totalBytesSent, res.totalBytesExpectedToSend)
+      })
+    }
   })
 }

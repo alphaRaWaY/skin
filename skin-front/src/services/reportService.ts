@@ -1,82 +1,87 @@
-import type { APIReport } from '@/types/report'
-import {http, uploadFile} from '@/utils/http'
+﻿import type { APIReport } from '@/types/report'
+import { http, uploadFile } from '@/utils/http'
 
-export const getReports = () =>{
+export const getReports = () => {
   return http<APIReport[]>({
-    method:'GET',
-    url:'/reports',
+    method: 'GET',
+    url: '/cases',
   })
 }
 
-export const searchReports = (username:string) =>{
+export const searchReports = (username: string) => {
   return http<APIReport[]>({
-    method:'GET',
-    url:`/reports/search/${username}`,
+    method: 'GET',
+    url: `/cases/search/${encodeURIComponent(username)}`,
   })
 }
 
-
-export const deleteReport = (id:number) =>{
+export const deleteReport = (id: number) => {
   return http({
-    method:'DELETE',
-    url: `/reports/${id}`,
+    method: 'DELETE',
+    url: `/cases/${id}`,
   })
 }
 
-
-export const getReportDetail = (id:number) =>{
+export const getReportDetail = (id: number) => {
   return http<APIReport>({
-    method:'GET',
-    url: `/reports/${id}`,
+    method: 'GET',
+    url: `/cases/${id}`,
   })
 }
 
-export const postReport = (data:APIReport) =>{
+export const postReport = (data: APIReport) => {
   return http({
-    method:'POST',
-    url: '/reports',
-    data
+    method: 'POST',
+    url: '/cases/save',
+    data,
   })
 }
 
-export const analysReport = (data:APIReport) =>{
+export const analysReport = (data: APIReport) => {
   return http<APIReport>({
-    method:'POST',
-    url: '/reports/analys',
-    data
+    method: 'POST',
+    url: '/cases/analyze',
+    data,
   })
 }
 
-export const analysReportWithImage = (filePath: string, data: APIReport) => {
+export const analysReportWithImage = (
+  filePath: string,
+  data: APIReport,
+  onProgress?: (progress: number) => void,
+) => {
   return uploadFile<APIReport>({
-    url: '/reports/analys-upload',
+    url: '/cases/analyze-upload',
     name: 'image',
     filePath,
     formData: {
-      reportJson: JSON.stringify(data)
-    }
+      reportJson: JSON.stringify(data),
+    },
+    onProgress: (progress) => {
+      onProgress?.(progress)
+    },
   })
 }
 
-export const uploadImageToServer = (file:string) =>{
+export const uploadImageToServer = (file: string) => {
   return uploadFile<string>({
-      url: '/oss/upload',
-      name: 'file',
-      filePath:file
-    })
+    url: '/oss/upload',
+    name: 'file',
+    filePath: file,
+  })
 }
 
-export const getImage = (objectKey:string) =>{
+export const getImage = (objectKey: string) => {
   return http<string>({
-      method:'POST',
-      url: '/oss/image-url',
-      data: objectKey
-    })
+    method: 'POST',
+    url: '/oss/image-url',
+    data: objectKey,
+  })
 }
 
 export const deleteUploadedImage = (objectKey: string) => {
   return http({
     method: 'DELETE',
-    url: `/oss/object?objectKey=${encodeURIComponent(objectKey)}`
+    url: `/oss/object?objectKey=${encodeURIComponent(objectKey)}`,
   })
 }

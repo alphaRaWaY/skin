@@ -1,276 +1,300 @@
 <script setup lang="ts">
-import { useAuthorizationStore } from '@/stores';
-const serviceTypes = [
-  { type: 'history', text: '我的历史', icon: 'test' },
-  // { type: 'report', text: '我的报告', icon: 'test1' },
-  { type: 'family', text: '我的家人', icon: 'test2' },
-]
+import { computed, ref, watch } from 'vue'
+import { useAuthorizationStore } from '@/stores'
+import { getOssImageUrl } from '@/services/accountService'
+import { getDashboardSummary } from '@/services/dashboardService'
 
-const auth = useAuthorizationStore();
-// 登出
-const logout=()=>{
-  setTimeout(()=>{
-    auth.logout();
-  },1000)
-  uni.navigateTo({
-    url:'/pages/login/login'
-  })
+const auth = useAuthorizationStore()
+
+const doctorName = computed(() => auth.profile.nickname || auth.profile.username || 'XXX医生')
+const avatarRenderUrl = ref('/static/design/设计素材/医生头像.png')
+const avatarUrl = computed(() => avatarRenderUrl.value)
+const deptText = computed(() => (auth.profile.mobile ? `手机号：${auth.profile.mobile}` : '手机号：'))
+const titleText = computed(() => (auth.profile.jobNumber ? `医工号：${auth.profile.jobNumber}` : '医工号：'))
+const todayDiagnosed = ref(0)
+
+const resolveAvatar = async () => {
+  const raw = auth.profile.avatar || ''
+  if (!raw) {
+    avatarRenderUrl.value = '/static/design/设计素材/医生头像.png'
+    return
+  }
+  if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    avatarRenderUrl.value = raw
+    return
+  }
+  try {
+    const res = await getOssImageUrl(raw)
+    avatarRenderUrl.value = res.code === 0 && res.result ? res.result : '/static/design/设计素材/医生头像.png'
+  } catch {
+    avatarRenderUrl.value = '/static/design/设计素材/医生头像.png'
+  }
 }
-// 测试登录状态
-// const testAuth = () => {
-//   console.log(auth.profile);
-//   if (auth.token) {
-//     uni.showToast({
-//       title: '当前界面已登录',
-//       icon: 'success'
-//     });
-//   } else {
-//     uni.showToast({
-//       title: '当前界面还未登录',
-//       icon: 'success'
-//     });
-//   }
-// }
-// 获取屏幕边界到安全区域距离
-const { safeAreaInsets } = uni.getSystemInfoSync();
+
+watch(
+  () => auth.profile.avatar,
+  () => {
+    resolveAvatar()
+  },
+  { immediate: true },
+)
+
+const fetchDashboard = async () => {
+  try {
+    const res = await getDashboardSummary()
+    if (res.code === 0 && res.result) {
+      todayDiagnosed.value = Number(res.result.todayDiagnosed || 0)
+    } else {
+      todayDiagnosed.value = 0
+    }
+  } catch {
+    todayDiagnosed.value = 0
+  }
+}
+
+fetchDashboard()
+
+const goNewDiagnosis = () => {
+  uni.switchTab({ url: '/pages/index/index' })
+}
+
+const goPendingCases = () => {
+  uni.setStorageSync('caseStatusFilter', 'PENDING')
+  uni.switchTab({ url: '/pages/case/records' })
+}
+
+const goHistoryCases = () => {
+  uni.setStorageSync('caseStatusFilter', 'ALL')
+  uni.switchTab({ url: '/pages/case/records' })
+}
+
+const goFollowupCases = () => {
+  uni.setStorageSync('caseStatusFilter', 'FOLLOWUP')
+  uni.switchTab({ url: '/pages/case/records' })
+}
+
+const openAnnouncement = () => {
+  uni.showToast({ title: '暂无此功能', icon: 'none' })
+}
+
+const editProfile = () => {
+  uni.navigateTo({ url: '/pages/my/sub/settings' })
+}
 </script>
 
 <template>
-  <scroll-view scroll-y class="viewport" enable-back-to-top>
-    <!-- 个人资料 -->
-    <view class="profile" :style="{ paddingTop: safeAreaInsets!.top + 'px' }">
-
-      <!-- 已经登录的情况 -->
-      <view class="profile" v-if="auth.token">
-        <!-- 头像 -->
-        <image
-          class="avatar"
-          mode="aspectFill"
-          :src="auth.profile.avatar || '@/static/images/avatar.jpg'"
-        ></image>
-        <!-- 个人信息 -->
-        <view class="meta">
-          <view class="nickname">
-            {{ auth.profile.nickname || auth.profile.mobile }}
-          </view>
-          <navigator class="extra" url="/pagesMember/profile/profile" hover-class="none">
-            <text class="update">更新头像昵称</text>
-          </navigator>
-        </view>
-      </view>
-
-      <!-- 未登录的情况 -->
-      <view class="overview" v-else>
-        <navigator url="/pages/login/login" open-type="navigate" hover-class="navigator-hover">
-          <image
-            class="avatar gray"
-            mode="aspectFill"
-            src="@/static/images/avatar.jpg"
-          />
-        </navigator>
-        <view class="meta">
-          <navigator url="/pages/login/login" hover-class="none" class="nickname">
-            未登录
-          </navigator>
-          <view class="extra">
-            <text class="tips">点击登录账号</text>
-          </view>
-        </view>
-      </view>
-
-      <!-- 设置按钮 -->
-      <navigator v-if="auth.token" class="settings" @click="logout" hover-class="none">
-        退出登录
-      </navigator>
+  <view class="page">
+    <view class="top-banner">
+      <image class="banner-bg" src="/static/login/login-header.jpg" mode="aspectFill" />
+      <view class="banner-mask"></view>
+      <text class="title">灵镜智诊</text>
     </view>
 
-    <!-- 我的服务 -->
-    <view class="orders">
-      <view class="title">
-        我的服务
-        <navigator class="navigator" url="/pagesOrder/list/list?type=0" hover-class="none">
-          智能皮肤检测系统<text class="icon-right"></text>
-        </navigator>
-      </view>
-      <view class="section">
-        <!-- 服务项目 -->
-        <navigator
-          v-if="auth.token"
-          v-for="item in serviceTypes"
-          :key="item.type"
-          :class="`navigator iconfont icon-icon-${item.icon}`"
-          :url="`/pages/my/sub/${item.type}`"
-          hover-class="none"
-        >
-          {{ item.text }}
-        </navigator>
-
-        <navigator
-          v-else
-          v-for="item in serviceTypes"
-          :key="item.type"
-          :class="`navigator iconfont icon-icon-${item.icon}`"
-          url="/pages/login/login"
-          hover-class="none"
-          class="gray"
-        >
-          {{ item.text }}
-        </navigator>
+    <view class="profile-card">
+      <image class="avatar" :src="avatarUrl" mode="aspectFill" />
+      <view class="profile-main">
+        <text class="name">{{ doctorName }}，您好</text>
+        <view class="meta-row"><text>{{ deptText }}</text><text>{{ titleText }}</text></view>
+        <view class="meta-row">
+          <text>在线状态：</text>
+          <text class="edit" @tap="editProfile">修改信息 ></text>
+        </view>
       </view>
     </view>
-    <!-- <button
-      :disabled="false"
-      :loading="false"
-      hover-class="button-hover"
-      @click="testAuth"
-    >
-      测试登录
-    </button>
 
-    <text class="iconfont icon-icon-test">测试图标是否有用</text> -->
-    <!-- <button @click="testFamily">测试家人</button> -->
-  </scroll-view>
+    <view class="card stat-card">
+      <text class="card-title">今日统计</text>
+      <text class="stat-text">今日诊断数：<text class="accent">{{ todayDiagnosed }}</text></text>
+    </view>
+
+    <view class="card announce-card">
+      <text class="card-title">公告</text>
+      <view class="announce-item" @tap="openAnnouncement">
+        <text>医院通知</text>
+        <text class="arrow">></text>
+      </view>
+      <view class="divider"></view>
+      <view class="announce-item" @tap="openAnnouncement">
+        <text>皮肤镜诊断规范更新</text>
+        <text class="arrow">></text>
+      </view>
+    </view>
+
+    <view class="section-title">诊疗数据</view>
+    <view class="grid">
+      <view class="grid-item" @tap="goNewDiagnosis">
+        <image class="grid-icon" src="/static/design/设计素材/诊疗数据“新建皮肤镜诊断”图标.png" mode="aspectFit" />
+        <text>新建皮肤镜诊断</text>
+      </view>
+      <view class="grid-item" @tap="goPendingCases">
+        <image class="grid-icon" src="/static/design/设计素材/诊疗数据“待处理病例”图标.png" mode="aspectFit" />
+        <text>查看待处理病例</text>
+      </view>
+      <view class="grid-item" @tap="goHistoryCases">
+        <image class="grid-icon" src="/static/design/设计素材/诊疗数据“历史病例”图标.png" mode="aspectFit" />
+        <text>历史病例</text>
+      </view>
+      <view class="grid-item" @tap="goFollowupCases">
+        <image class="grid-icon" src="/static/design/设计素材/诊疗数据“待复查病例”图标.png" mode="aspectFit" />
+        <text>待复查病例</text>
+      </view>
+    </view>
+  </view>
 </template>
 
-<style lang="scss">
-page {
-  height: 100%;
+<style scoped lang="scss">
+$theme: #8a2b31;
+
+.page {
+  min-height: 100vh;
+  background: #f7f7f8;
+  padding-bottom: 24rpx;
+}
+
+.top-banner {
+  position: relative;
+  height: 220rpx;
   overflow: hidden;
-  background-color: #f7f7f8;
+  background: linear-gradient(120deg, #7f1f28, $theme);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.viewport {
+.banner-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  background-repeat: no-repeat;
-  background-image: url(https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/images/center_bg.png);
-  background-size: 100% auto;
+  opacity: 0.2;
 }
 
-/* 用户信息 */
-.profile {
-  margin-top: 20rpx;
+.banner-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.title {
   position: relative;
-
-  .overview {
-    display: flex;
-    height: 120rpx;
-    padding: 0 36rpx;
-    color: #fff;
-  }
-
-  .avatar {
-    width: 120rpx;
-    height: 120rpx;
-    border-radius: 50%;
-    background-color: #eee;
-  }
-
-  .gray {
-    filter: grayscale(100%);
-  }
-
-  .meta {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    line-height: 30rpx;
-    padding: 16rpx 0;
-    margin-left: 20rpx;
-  }
-
-  .nickname {
-    max-width: 350rpx;
-    margin-bottom: 16rpx;
-    font-size: 30rpx;
-
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .extra {
-    display: flex;
-    font-size: 20rpx;
-  }
-
-  .tips {
-    font-size: 22rpx;
-  }
-
-  .update {
-    padding: 3rpx 10rpx 1rpx;
-    color: rgba(255, 255, 255, 0.8);
-    border: 1rpx solid rgba(255, 255, 255, 0.8);
-    margin-right: 10rpx;
-    border-radius: 30rpx;
-  }
-
-  .settings {
-    position: absolute;
-    bottom: 0;
-    right: 40rpx;
-    font-size: 30rpx;
-    color: #fff;
-  }
+  z-index: 2;
+  color: #fff;
+  font-size: 38rpx;
+  font-weight: 700;
 }
 
-/* 我的服务 */
-.orders {
-  position: relative;
-  z-index: 99;
-  padding: 30rpx;
-  margin: 50rpx 20rpx 0;
-  background-color: #fff;
-  border-radius: 10rpx;
-  box-shadow: 0 4rpx 6rpx rgba(240, 240, 240, 0.6);
-
-  .title {
-    height: 40rpx;
-    line-height: 40rpx;
-    font-size: 28rpx;
-    color: #1e1e1e;
-
-    .navigator {
-      font-size: 24rpx;
-      color: #939393;
-      float: right;
-    }
-  }
-
-  .gray {
-    filter: grayscale(100%);
-  }
-
-  .section {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    padding: 40rpx 20rpx 10rpx;
-    .navigator,
-    .contact {
-      text-align: center;
-      font-size: 24rpx;
-      color: #333;
-      &::before {
-        display: block;
-        font-size: 60rpx;
-        color: #ff9545;
-      }
-    }
-    .contact {
-      padding: 0;
-      margin: 0;
-      border: 0;
-      background-color: transparent;
-      line-height: inherit;
-    }
-  }
+.profile-card {
+  margin: 18rpx 22rpx;
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
 }
 
-/* 猜你喜欢 */
-.guess {
-  background-color: #f7f7f8;
-  margin-top: 20rpx;
+.avatar {
+  width: 132rpx;
+  height: 132rpx;
+  border-radius: 66rpx;
+  border: 2rpx solid #ddd;
+  background: #fff;
+}
+
+.profile-main {
+  flex: 1;
+}
+
+.name {
+  font-size: 46rpx;
+  font-weight: 700;
+  color: #171717;
+  margin-bottom: 8rpx;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 34rpx;
+  color: #323232;
+}
+
+.edit {
+  color: #555;
+}
+
+.card {
+  margin: 0 22rpx 18rpx;
+  background: #f8f8f8;
+  border: 2rpx solid #2a2a2a;
+  border-radius: 28rpx;
+  box-shadow: 0 6rpx 12rpx rgba(0, 0, 0, 0.08);
+  padding: 18rpx 24rpx;
+}
+
+.card-title {
+  display: block;
+  text-align: center;
+  font-size: 46rpx;
+  font-weight: 700;
+  margin-bottom: 10rpx;
+}
+
+.stat-text {
+  display: block;
+  text-align: center;
+  font-size: 40rpx;
+  color: #333;
+}
+
+.accent {
+  color: $theme;
+}
+
+.announce-item {
+  height: 76rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 38rpx;
+  color: #333;
+}
+
+.arrow {
+  color: #989898;
+}
+
+.divider {
+  border-top: 1px solid #cfcfcf;
+}
+
+.section-title {
+  margin: 8rpx 22rpx 12rpx;
+  font-size: 46rpx;
+  font-weight: 700;
+  color: #121212;
+}
+
+.grid {
+  margin: 0 22rpx;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14rpx;
+}
+
+.grid-item {
+  min-height: 164rpx;
+  border: 2rpx solid #333;
+  border-radius: 26rpx;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  font-size: 36rpx;
+  color: #2f2f2f;
+}
+
+.grid-icon {
+  width: 54rpx;
+  height: 54rpx;
 }
 </style>

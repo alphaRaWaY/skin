@@ -20,8 +20,8 @@ services:
   ai:
     base-url: ${AI_SERVICE_BASE_URL:http://127.0.0.1:19082}
   analyzer:
-    mode: ${ANALYZER_MODE:mock}
-#    mode: ${ANALYZER_MODE:python}
+#    mode: ${ANALYZER_MODE:mock}
+    mode: ${ANALYZER_MODE:python}
   model:
     base-url: ${MODEL_SERVICE_BASE_URL:http://127.0.0.1:19090}
     predict-path: ${MODEL_SERVICE_PREDICT_PATH:/api/v1/predict}
