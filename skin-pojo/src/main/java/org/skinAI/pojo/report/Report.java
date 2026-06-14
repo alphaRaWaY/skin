@@ -21,9 +21,14 @@ public class Report {
 
     // 图片 URL
     private String imageUrl;
+    private String heatmapUrl;
+    private String heatmapBase64;
 
     // 结果信息
     private String diseaseType;
+    private Integer diseaseIndex;
+    private Double confidence;
+    private String modelVersion;
     private String value;
     private String advice;
     private String introduction;

@@ -93,8 +93,12 @@ public class PythonReportAnalyzer implements ReportAnalyzer {
         Report output = copyBaseFields(inputReport);
         Object diseaseTypeObj = dataMap.get("diseaseType");
         output.setDiseaseType(diseaseTypeObj == null ? "unknown" : String.valueOf(diseaseTypeObj));
+        output.setDiseaseIndex(asInteger(dataMap.get("diseaseIndex")));
+        output.setConfidence(asDouble(dataMap.get("confidence")));
+        output.setModelVersion(parseModelVersion(dataMap));
         output.setConceptScores(parseConceptScores(dataMap));
         output.setValue(buildValueFromModelData(dataMap));
+        output.setHeatmapBase64(parseHeatmapBase64(dataMap));
         output.setAdvice("");
         output.setIntroduction("");
         return output;
@@ -130,7 +134,38 @@ public class PythonReportAnalyzer implements ReportAnalyzer {
         output.setOther(inputReport.getOther());
         output.setCheckTime(inputReport.getCheckTime());
         output.setImageUrl(inputReport.getImageUrl());
+        output.setHeatmapUrl(inputReport.getHeatmapUrl());
         return output;
+    }
+
+    private Integer asInteger(Object value) {
+        return value instanceof Number number ? number.intValue() : null;
+    }
+
+    private Double asDouble(Object value) {
+        return value instanceof Number number ? number.doubleValue() : null;
+    }
+
+    private String parseModelVersion(Map<?, ?> dataMap) {
+        Object modelObj = dataMap.get("model");
+        if (!(modelObj instanceof Map<?, ?> modelMap)) {
+            return null;
+        }
+        Object name = modelMap.get("name");
+        return name == null ? null : String.valueOf(name);
+    }
+
+    private String parseHeatmapBase64(Map<?, ?> dataMap) {
+        Object heatmapObj = dataMap.get("heatmap");
+        if (!(heatmapObj instanceof Map<?, ?> heatmapMap)) {
+            return null;
+        }
+        Object encoding = heatmapMap.get("encoding");
+        Object data = heatmapMap.get("data");
+        if (data == null || encoding == null || !"base64".equalsIgnoreCase(String.valueOf(encoding))) {
+            return null;
+        }
+        return String.valueOf(data);
     }
 
     private String buildValueFromModelData(Map<?, ?> dataMap) {
@@ -157,6 +192,33 @@ public class PythonReportAnalyzer implements ReportAnalyzer {
     }
 
     private List<ConceptScore> parseConceptScores(Map<?, ?> dataMap) {
+        Object conceptsObj = dataMap.get("concepts");
+        if (conceptsObj instanceof List<?> concepts && !concepts.isEmpty()) {
+            List<ConceptScore> result = new ArrayList<>();
+            for (Object conceptObj : concepts) {
+                if (!(conceptObj instanceof Map<?, ?> conceptMap)) {
+                    continue;
+                }
+                Integer index = asInteger(conceptMap.get("index"));
+                Double score = asDouble(conceptMap.get("score"));
+                if (index == null || score == null) {
+                    continue;
+                }
+                ConceptScore item = new ConceptScore();
+                item.setConceptIndex(index);
+                item.setScore(score);
+                item.setRankNo(asInteger(conceptMap.get("rank")));
+                Object nameEn = conceptMap.get("nameEn");
+                Object nameCn = conceptMap.get("nameCn");
+                item.setConceptNameEn(nameEn == null ? null : String.valueOf(nameEn));
+                item.setConceptNameCn(nameCn == null ? null : String.valueOf(nameCn));
+                result.add(item);
+            }
+            if (!result.isEmpty()) {
+                return result;
+            }
+        }
+
         Object topIndicesObj = dataMap.get("topKIndices");
         Object topScoresObj = dataMap.get("topKScores");
         if (!(topIndicesObj instanceof List<?> indices) || !(topScoresObj instanceof List<?> scores)) {

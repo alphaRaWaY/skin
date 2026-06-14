@@ -2,7 +2,7 @@ name: skinai
 
 services:
   mysql:
-    image: mysql:8.4
+    image: docker.m.daocloud.io/library/mysql:8.4
     container_name: skin-mysql
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -24,7 +24,7 @@ services:
       retries: 20
 
   redis:
-    image: redis:7.4
+    image: docker.m.daocloud.io/library/redis:7-alpine
     container_name: skin-redis
     ports:
       - "6379:6379"

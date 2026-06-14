@@ -1,0 +1,943 @@
+{
+  "dataset_name": "湘雅皮肤镜数据集(12类)",
+  "data_root": "data",
+  "images_dir": "data/examples",
+  "num_classes": 12,
+  "num_concepts": 80,
+  "diseases": [
+    "verruca_vulgaris",
+    "vitiligo",
+    "psoriasis",
+    "pityriasis_rosea",
+    "lichen_planus",
+    "eczema",
+    "acne_vulgaris",
+    "melanocytic_nevus",
+    "bowen_disease",
+    "basal_cell_carcinoma",
+    "squamous_cell_carcinoma",
+    "melanoma"
+  ],
+  "disease_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "disease_concept_mapping": {
+    "verruca_vulgaris": {
+      "concepts": [
+        {
+          "concept_idx": 5,
+          "concept_name": "black dots sign",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 24,
+          "concept_name": "fissures and ridge",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 28,
+          "concept_name": "glomerular vessels",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 30,
+          "concept_name": "hairpin vessels",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 33,
+          "concept_name": "irregular, non-homogenous vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 37,
+          "concept_name": "linear pigment increase",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 44,
+          "concept_name": "papillomatous structures",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 56,
+          "concept_name": "purple",
+          "weight": 0.7
+        }
+      ]
+    },
+    "vitiligo": {
+      "concepts": [
+        {
+          "concept_idx": 26,
+          "concept_name": "follicular white halo",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 59,
+          "concept_name": "residual perifollicular pigmentation",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 60,
+          "concept_name": "reticular vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 65,
+          "concept_name": "starburst pattern",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 71,
+          "concept_name": "white",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 41,
+          "concept_name": "milky-white sign",
+          "weight": 1.0
+        }
+      ]
+    },
+    "psoriasis": {
+      "concepts": [
+        {
+          "concept_idx": 0,
+          "concept_name": "Auspitz sign",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 12,
+          "concept_name": "central distribution",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 17,
+          "concept_name": "diffuse distribution",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 18,
+          "concept_name": "diffuse/regular vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 21,
+          "concept_name": "dots vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 28,
+          "concept_name": "glomerular vessels",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 30,
+          "concept_name": "hairpin vessels",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 47,
+          "concept_name": "patch distribution",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 51,
+          "concept_name": "peripheral distribution",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 57,
+          "concept_name": "red",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 69,
+          "concept_name": "twisted red loops vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 74,
+          "concept_name": "white scales",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 75,
+          "concept_name": "yellow",
+          "weight": 0.7
+        }
+      ]
+    },
+    "pityriasis_rosea": {
+      "concepts": [
+        {
+          "concept_idx": 21,
+          "concept_name": "dots vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 33,
+          "concept_name": "irregular, non-homogenous vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 38,
+          "concept_name": "linear-regular vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 48,
+          "concept_name": "patchy/focal vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 51,
+          "concept_name": "peripheral distribution",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 60,
+          "concept_name": "reticular vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 74,
+          "concept_name": "white scales",
+          "weight": 1.0
+        }
+      ]
+    },
+    "lichen_planus": {
+      "concepts": [
+        {
+          "concept_idx": 2,
+          "concept_name": "Wickham striae",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 12,
+          "concept_name": "central distribution",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 20,
+          "concept_name": "dots and globules",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 21,
+          "concept_name": "dots vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 25,
+          "concept_name": "follicular keratotic plugs",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 26,
+          "concept_name": "follicular white halo",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 29,
+          "concept_name": "grey",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 38,
+          "concept_name": "linear-regular vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 47,
+          "concept_name": "patch distribution",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 53,
+          "concept_name": "pinkish area",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 56,
+          "concept_name": "purple",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 74,
+          "concept_name": "white scales",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 78,
+          "concept_name": "peppering/granularity scar like depigmentation",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 79,
+          "concept_name": "clods white shiny point and line",
+          "weight": 1.0
+        }
+      ]
+    },
+    "eczema": {
+      "concepts": [
+        {
+          "concept_idx": 18,
+          "concept_name": "diffuse/regular vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 21,
+          "concept_name": "dots vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 38,
+          "concept_name": "linear-regular vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 48,
+          "concept_name": "patchy/focal vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 57,
+          "concept_name": "red",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 76,
+          "concept_name": "yellow scales and crusts",
+          "weight": 2.0
+        }
+      ]
+    },
+    "acne_vulgaris": {
+      "concepts": [
+        {
+          "concept_idx": 21,
+          "concept_name": "dots vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 38,
+          "concept_name": "linear-regular vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 57,
+          "concept_name": "red",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 18,
+          "concept_name": "diffuse/regular vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 14,
+          "concept_name": "comedo-like openings",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 39,
+          "concept_name": "milia-like cysts",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 75,
+          "concept_name": "yellow",
+          "weight": 1.0
+        }
+      ]
+    },
+    "melanocytic_nevus": {
+      "concepts": [
+        {
+          "concept_idx": 4,
+          "concept_name": "atypical pigment network",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 6,
+          "concept_name": "blotches",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 19,
+          "concept_name": "dots",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 20,
+          "concept_name": "dots and globules",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 23,
+          "concept_name": "fibrillar pattern",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 27,
+          "concept_name": "globules",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 32,
+          "concept_name": "homogenous pattern",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 34,
+          "concept_name": "lattice-like pattern",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 43,
+          "concept_name": "negative pigment network",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 45,
+          "concept_name": "parallel furrow pattern",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 52,
+          "concept_name": "pigment network",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 61,
+          "concept_name": "rim of brown globules",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 65,
+          "concept_name": "starburst pattern",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 67,
+          "concept_name": "structureless zone",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 73,
+          "concept_name": "white network",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 78,
+          "concept_name": "peppering/granularity scar like depigmentation",
+          "weight": 1.0
+        }
+      ]
+    },
+    "bowen_disease": {
+      "concepts": [
+        {
+          "concept_idx": 21,
+          "concept_name": "dots vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 28,
+          "concept_name": "glomerular vessels",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 30,
+          "concept_name": "hairpin vessels",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 37,
+          "concept_name": "linear pigment increase",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 48,
+          "concept_name": "patchy/focal vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 57,
+          "concept_name": "red",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 61,
+          "concept_name": "rim of brown globules",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 74,
+          "concept_name": "white scales",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 75,
+          "concept_name": "yellow",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 76,
+          "concept_name": "yellow scales and crusts",
+          "weight": 2.0
+        }
+      ]
+    },
+    "basal_cell_carcinoma": {
+      "concepts": [
+        {
+          "concept_idx": 3,
+          "concept_name": "arborizing vessels",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 7,
+          "concept_name": "blue-gray ovoid nests",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 8,
+          "concept_name": "blue-grey pigmentation",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 14,
+          "concept_name": "comedo-like openings",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 15,
+          "concept_name": "comma vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 21,
+          "concept_name": "dots vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 22,
+          "concept_name": "erosion",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 28,
+          "concept_name": "glomerular vessels",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 30,
+          "concept_name": "hairpin vessels",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 31,
+          "concept_name": "helical vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 33,
+          "concept_name": "irregular, non-homogenous vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 35,
+          "concept_name": "leaf-like structures",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 36,
+          "concept_name": "linear irregular vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 39,
+          "concept_name": "milia-like cysts",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 40,
+          "concept_name": "milky red globules",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 42,
+          "concept_name": "multiple blue-gray globules",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 52,
+          "concept_name": "pigment network",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 60,
+          "concept_name": "reticular vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 64,
+          "concept_name": "spoke-wheel-like structures",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 68,
+          "concept_name": "structureless",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 70,
+          "concept_name": "ulcer",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 72,
+          "concept_name": "white dots",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 1,
+          "concept_name": "Multicomponent pattern",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 79,
+          "concept_name": "clods white shiny point and line",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 63,
+          "concept_name": "spoke-wheel-like streaks",
+          "weight": 1.0
+        }
+      ]
+    },
+    "squamous_cell_carcinoma": {
+      "concepts": [
+        {
+          "concept_idx": 22,
+          "concept_name": "erosion",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 28,
+          "concept_name": "glomerular vessels",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 30,
+          "concept_name": "hairpin vessels",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 33,
+          "concept_name": "irregular, non-homogenous vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 54,
+          "concept_name": "polymorphous vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 62,
+          "concept_name": "rosettes arranged in a square",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 66,
+          "concept_name": "strawberry pattern",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 70,
+          "concept_name": "ulcer",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 79,
+          "concept_name": "clods white shiny point and line",
+          "weight": 1.0
+        }
+      ]
+    },
+    "melanoma": {
+      "concepts": [
+        {
+          "concept_idx": 4,
+          "concept_name": "atypical pigment network",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 6,
+          "concept_name": "blotches",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 8,
+          "concept_name": "blue-grey pigmentation",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 9,
+          "concept_name": "blue-whitish veil",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 10,
+          "concept_name": "branched streaks",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 11,
+          "concept_name": "brown",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 15,
+          "concept_name": "comma vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 16,
+          "concept_name": "cut-off sign",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 19,
+          "concept_name": "dots",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 20,
+          "concept_name": "dots and globules",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 21,
+          "concept_name": "dots vessels",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 22,
+          "concept_name": "erosion",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 27,
+          "concept_name": "globules",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 28,
+          "concept_name": "glomerular vessels",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 31,
+          "concept_name": "helical vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 33,
+          "concept_name": "irregular, non-homogenous vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 36,
+          "concept_name": "linear irregular vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 40,
+          "concept_name": "milky red globules",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 42,
+          "concept_name": "multiple blue-gray globules",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 43,
+          "concept_name": "negative pigment network",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 46,
+          "concept_name": "parallel ridge pattern",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 49,
+          "concept_name": "peppering",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 52,
+          "concept_name": "pigment network",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 53,
+          "concept_name": "pinkish area",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 54,
+          "concept_name": "polymorphous vessels",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 55,
+          "concept_name": "pseudopods",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 58,
+          "concept_name": "regression structures",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 63,
+          "concept_name": "spoke-wheel-like streaks",
+          "weight": 2.5
+        },
+        {
+          "concept_idx": 65,
+          "concept_name": "starburst pattern",
+          "weight": 1.5
+        },
+        {
+          "concept_idx": 68,
+          "concept_name": "structureless",
+          "weight": 1.0
+        },
+        {
+          "concept_idx": 70,
+          "concept_name": "ulcer",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 73,
+          "concept_name": "white network",
+          "weight": 0.7
+        },
+        {
+          "concept_idx": 1,
+          "concept_name": "Multicomponent pattern",
+          "weight": 2.0
+        },
+        {
+          "concept_idx": 78,
+          "concept_name": "peppering/granularity scar like depigmentation",
+          "weight": 1.0
+        }
+      ]
+    }
+  },
+  "concept_embeddings": null,
+  "concept_list": [
+    "Auspitz sign",
+    "Multicomponent pattern",
+    "Wickham striae",
+    "arborizing vessels",
+    "atypical pigment network",
+    "black dots sign",
+    "blotches",
+    "blue-gray ovoid nests",
+    "blue-grey pigmentation",
+    "blue-whitish veil",
+    "branched streaks",
+    "brown",
+    "central distribution",
+    "clods, white shiny point and line",
+    "comedo-like openings",
+    "comma vessels",
+    "cut-off sign",
+    "diffuse distribution",
+    "diffuse/regular vessels",
+    "dots",
+    "dots and globules",
+    "dots vessels",
+    "erosion",
+    "fibrillar pattern",
+    "fissures and ridge",
+    "follicular keratotic plugs",
+    "follicular white halo",
+    "globules",
+    "glomerular vessels",
+    "grey",
+    "hairpin vessels",
+    "helical vessels",
+    "homogenous pattern",
+    "irregular, non-homogenous vessels",
+    "lattice-like pattern",
+    "leaf-like structures",
+    "linear irregular vessels",
+    "linear pigment increase",
+    "linear-regular vessels",
+    "milia-like cysts",
+    "milky red globules",
+    "milky-white sign",
+    "multiple blue-gray globules",
+    "negative pigment network",
+    "papillomatous structures",
+    "parallel furrow pattern",
+    "parallel ridge pattern",
+    "patch distribution",
+    "patchy/focal vessels",
+    "peppering",
+    "peppering/granularity, scar like depigmentation",
+    "peripheral distribution",
+    "pigment network",
+    "pinkish area",
+    "polymorphous vessels",
+    "pseudopods",
+    "purple",
+    "red",
+    "regression structures",
+    "residual perifollicular pigmentation",
+    "reticular vessels",
+    "rim of brown globules",
+    "rosettes arranged in a square",
+    "spoke-wheel-like streaks",
+    "spoke-wheel-like structures",
+    "starburst pattern",
+    "strawberry pattern",
+    "structureless zone",
+    "structureless",
+    "twisted red loops vessels",
+    "ulcer",
+    "white",
+    "white dots",
+    "white network",
+    "white scales",
+    "yellow",
+    "yellow scales and crusts",
+    "circles white",
+    "peppering/granularity scar like depigmentation",
+    "clods white shiny point and line"
+  ]
+}

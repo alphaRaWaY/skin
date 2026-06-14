@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { deleteMedicalCase, getMedicalCaseDetail, type MedicalCaseItem } from '@/services/medicalCaseService'
+import {
+  deleteMedicalCase,
+  getMedicalCaseDetail,
+  type MedicalCaseItem,
+} from '@/services/medicalCaseService'
+import { getImage } from '@/services/reportService'
 
 const loading = ref(false)
-const caseId = ref<number>(0)
+const caseId = ref(0)
 const detail = ref<MedicalCaseItem | null>(null)
+const originalImage = ref('')
+const heatmapImage = ref('')
 
 const getPageId = () => {
   const pages = getCurrentPages()
@@ -17,39 +24,54 @@ const formatTime = (value?: string) => {
   if (!value) return '--'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  const y = date.getFullYear()
-  const m = `${date.getMonth() + 1}`.padStart(2, '0')
-  const d = `${date.getDate()}`.padStart(2, '0')
-  const hh = `${date.getHours()}`.padStart(2, '0')
-  const mm = `${date.getMinutes()}`.padStart(2, '0')
-  return `${y}-${m}-${d} ${hh}:${mm}`
+  const pad = (part: number) => `${part}`.padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
+    date.getHours(),
+  )}:${pad(date.getMinutes())}`
 }
 
 const statusText = (status?: string) => {
-  if (status === 'PENDING') return '待处理'
-  if (status === 'IN_PROGRESS') return '进行中'
-  if (status === 'FOLLOWUP') return '待复查'
-  if (status === 'DONE') return '已完成'
-  if (status === 'CLOSED') return '已关闭'
-  return status || '--'
+  const labels: Record<string, string> = {
+    PENDING: '待处理',
+    IN_PROGRESS: '进行中',
+    FOLLOWUP: '待复查',
+    DONE: '已完成',
+    CLOSED: '已关闭',
+  }
+  return status ? labels[status] || status : '--'
+}
+
+const resolveImage = async (value?: string) => {
+  if (!value) return ''
+  if (value.startsWith('http://') || value.startsWith('https://')) return value
+  const response = await getImage(value)
+  return response.result || ''
 }
 
 const fetchDetail = async () => {
   caseId.value = getPageId()
   if (!caseId.value) {
-    uni.showToast({ title: '缺少病历ID', icon: 'none' })
+    uni.showToast({ title: '缺少病例 ID', icon: 'none' })
     return
   }
+
   loading.value = true
   try {
-    const res = await getMedicalCaseDetail(caseId.value)
-    if (res.code === 0 && res.result) {
-      detail.value = res.result
-    } else {
-      uni.showToast({ title: res.msg || '获取病历详情失败', icon: 'none' })
+    const response = await getMedicalCaseDetail(caseId.value)
+    if (response.code !== 0 || !response.result) {
+      uni.showToast({ title: response.msg || '获取病例详情失败', icon: 'none' })
+      return
     }
-  } catch {
-    uni.showToast({ title: '获取病历详情失败', icon: 'none' })
+    detail.value = response.result
+    const [original, heatmap] = await Promise.all([
+      resolveImage(response.result.imageUrl),
+      resolveImage(response.result.heatmapUrl),
+    ])
+    originalImage.value = original
+    heatmapImage.value = heatmap
+  } catch (error) {
+    console.error(error)
+    uni.showToast({ title: '获取病例详情失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -58,19 +80,19 @@ const fetchDetail = async () => {
 const removeCase = () => {
   if (!caseId.value) return
   uni.showModal({
-    title: '删除病历',
-    content: '确认删除该病历吗？',
+    title: '删除病例',
+    content: '删除后，原始图像和热力图也会从云端清理。确认继续吗？',
     success: async (res) => {
       if (!res.confirm) return
-      uni.showLoading({ title: '删除中...' })
+      uni.showLoading({ title: '正在删除...' })
       try {
-        const ret = await deleteMedicalCase(caseId.value)
-        if (ret.code === 0) {
-          uni.showToast({ title: '删除成功', icon: 'success' })
-          setTimeout(() => uni.navigateBack(), 600)
-        } else {
-          uni.showToast({ title: ret.msg || '删除失败', icon: 'none' })
+        const response = await deleteMedicalCase(caseId.value)
+        if (response.code !== 0) {
+          uni.showToast({ title: response.msg || '删除失败', icon: 'none' })
+          return
         }
+        uni.showToast({ title: '删除成功', icon: 'success' })
+        setTimeout(() => uni.navigateBack(), 500)
       } finally {
         uni.hideLoading()
       }
@@ -84,146 +106,193 @@ onMounted(fetchDetail)
 <template>
   <view class="page">
     <view v-if="loading" class="state">加载中...</view>
-    <view v-else-if="!detail" class="state">未找到病历数据</view>
+    <view v-else-if="!detail" class="state">未找到病例数据</view>
 
     <view v-else class="content">
       <view class="header">
-        <text class="title">病历详情</text>
-        <text class="sub">ID: {{ detail.id }}</text>
+        <text class="title">病例详情</text>
+        <text class="case-no">{{ detail.caseNo || `ID: ${detail.id}` }}</text>
+      </view>
+
+      <view v-if="originalImage || heatmapImage" class="section">
+        <text class="section-title">局部证据匹配可视化</text>
+        <view class="image-compare">
+          <view class="image-item">
+            <view class="image-frame">
+              <image v-if="originalImage" :src="originalImage" mode="aspectFit" />
+              <text v-else>暂无原图</text>
+            </view>
+            <text>原始图像</text>
+          </view>
+          <view class="image-item">
+            <view class="image-frame">
+              <image v-if="heatmapImage" :src="heatmapImage" mode="aspectFit" />
+              <text v-else>暂无热力图</text>
+            </view>
+            <text>混合热力图</text>
+          </view>
+        </view>
       </view>
 
       <view class="section">
         <text class="section-title">基础信息</text>
-        <view class="item"><text class="label">患者</text><text class="value">{{ detail.patientName || '--' }}</text></view>
-        <view class="item"><text class="label">病历号</text><text class="value">{{ detail.caseNo || '--' }}</text></view>
-        <view class="item"><text class="label">状态</text><text class="value">{{ statusText(detail.status) }}</text></view>
-        <view class="item"><text class="label">就诊时间</text><text class="value">{{ formatTime(detail.checkTime) }}</text></view>
-        <view class="item"><text class="label">创建时间</text><text class="value">{{ formatTime(detail.createdAt) }}</text></view>
+        <view class="row"><text>患者</text><text>{{ detail.patientName || '--' }}</text></view>
+        <view class="row"><text>状态</text><text>{{ statusText(detail.status) }}</text></view>
+        <view class="row"><text>检测时间</text><text>{{ formatTime(detail.checkTime) }}</text></view>
+        <view class="row"><text>诊断类型</text><text class="accent">{{ detail.diagnosedType || '--' }}</text></view>
       </view>
 
       <view class="section">
         <text class="section-title">诊疗信息</text>
-        <view class="block"><text class="block-label">主诉</text><text class="block-text">{{ detail.chiefComplaint || '无' }}</text></view>
-        <view class="block"><text class="block-label">现病史</text><text class="block-text">{{ detail.presentHistory || '无' }}</text></view>
-        <view class="block"><text class="block-label">治疗史</text><text class="block-text">{{ detail.treatmentHistory || '无' }}</text></view>
-        <view class="item"><text class="label">病程</text><text class="value">{{ detail.duration || '--' }}</text></view>
-        <view class="item"><text class="label">诊断类型</text><text class="value">{{ detail.diagnosedType || '--' }}</text></view>
+        <view class="block"><text class="label">主诉</text><text>{{ detail.chiefComplaint || '无' }}</text></view>
+        <view class="block"><text class="label">现病史</text><text>{{ detail.presentHistory || '无' }}</text></view>
+        <view class="block"><text class="label">治疗史</text><text>{{ detail.treatmentHistory || '无' }}</text></view>
+        <view class="block"><text class="label">病程</text><text>{{ detail.duration || '无' }}</text></view>
       </view>
 
       <view class="section">
-        <text class="section-title">AI结果</text>
-        <view class="block"><text class="block-label">AI建议</text><text class="block-text">{{ detail.aiAdvice || '暂无' }}</text></view>
-        <view class="block"><text class="block-label">疾病介绍</text><text class="block-text">{{ detail.aiIntroduction || '暂无' }}</text></view>
+        <text class="section-title">AI建议</text>
+        <text class="long-text" user-select>{{ detail.aiAdvice || '暂无建议' }}</text>
       </view>
 
-      <view class="section" v-if="detail.extraNotes">
-        <text class="section-title">备注</text>
-        <view class="block"><text class="block-text">{{ detail.extraNotes }}</text></view>
+      <view class="section">
+        <text class="section-title">疾病介绍</text>
+        <text class="long-text" user-select>{{ detail.aiIntroduction || '暂无疾病介绍' }}</text>
       </view>
 
-      <button class="delete-btn" @tap="removeCase">删除病历</button>
+      <button class="delete-btn" @tap="removeCase">删除病例</button>
     </view>
   </view>
 </template>
 
 <style scoped lang="scss">
+$theme: #8a2b31;
+
 .page {
   min-height: 100vh;
-  background: #f5f5f7;
-  padding: 20rpx;
+  padding: 24rpx;
   box-sizing: border-box;
+  background: #f5f2f2;
 }
 
 .state {
+  padding: 100rpx 0;
   text-align: center;
   color: #888;
-  font-size: 28rpx;
-  padding: 80rpx 0;
 }
 
-.content {
+.header,
+.section {
+  margin-bottom: 22rpx;
+  padding: 24rpx;
+  border-radius: 18rpx;
   background: #fff;
-  border-radius: 14rpx;
-  padding: 20rpx;
 }
 
 .header {
-  margin-bottom: 20rpx;
-  padding-bottom: 12rpx;
-  border-bottom: 1rpx solid #eee;
+  border-top: 8rpx solid $theme;
+}
+
+.title,
+.case-no,
+.section-title,
+.label,
+.long-text {
+  display: block;
 }
 
 .title {
-  display: block;
   font-size: 34rpx;
   font-weight: 700;
-  color: #222;
 }
 
-.sub {
-  display: block;
-  margin-top: 6rpx;
-  font-size: 24rpx;
+.case-no {
+  margin-top: 8rpx;
   color: #888;
-}
-
-.section {
-  margin-bottom: 20rpx;
+  font-size: 23rpx;
 }
 
 .section-title {
-  display: block;
-  font-size: 30rpx;
+  margin-bottom: 18rpx;
+  color: $theme;
+  font-size: 29rpx;
   font-weight: 700;
-  color: #8a2b31;
-  margin-bottom: 10rpx;
 }
 
-.item {
+.image-compare {
   display: flex;
-  margin-bottom: 8rpx;
+  gap: 16rpx;
 }
 
-.label {
-  width: 150rpx;
-  font-size: 26rpx;
-  color: #666;
+.image-item {
+  width: calc(50% - 8rpx);
+  text-align: center;
+  color: #555;
+  font-size: 24rpx;
 }
 
-.value {
-  flex: 1;
+.image-frame {
+  width: 100%;
+  height: 280rpx;
+  margin-bottom: 10rpx;
+  border: 2rpx solid #333;
+  background: #f7f7f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}
+
+.image-frame image {
+  width: 100%;
+  height: 100%;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 12rpx 0;
+  border-bottom: 1rpx solid #eee;
   font-size: 26rpx;
-  color: #222;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.accent {
+  color: $theme;
+  font-weight: 600;
 }
 
 .block {
-  background: #f8f8fb;
+  margin-bottom: 12rpx;
+  padding: 16rpx;
   border-radius: 10rpx;
-  padding: 14rpx;
-  margin-bottom: 10rpx;
-}
-
-.block-label {
-  display: block;
-  font-size: 24rpx;
-  color: #777;
-  margin-bottom: 4rpx;
-}
-
-.block-text {
+  background: #f8f6f6;
   font-size: 26rpx;
-  color: #333;
-  line-height: 1.5;
-  user-select: text;
+  line-height: 1.6;
+}
+
+.label {
+  margin-bottom: 6rpx;
+  color: #777;
+  font-size: 23rpx;
+}
+
+.long-text {
+  font-size: 26rpx;
+  line-height: 1.75;
+  white-space: pre-wrap;
 }
 
 .delete-btn {
-  margin-top: 24rpx;
-  background: #b3353c;
+  margin: 30rpx 0;
   color: #fff;
-  border: none;
-  border-radius: 12rpx;
-  font-size: 30rpx;
+  background: $theme;
+  border-radius: 14rpx;
+  font-size: 29rpx;
 }
 
 .delete-btn::after {

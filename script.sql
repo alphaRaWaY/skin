@@ -83,10 +83,12 @@ CREATE TABLE IF NOT EXISTS `case_image` (
   `case_id` BIGINT UNSIGNED NOT NULL,
   `object_key` VARCHAR(255) NOT NULL,
   `public_url` TEXT NULL,
+  `image_type` VARCHAR(16) NOT NULL DEFAULT 'ORIGINAL' COMMENT 'ORIGINAL/HEATMAP',
   `is_primary` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_case_image_case` (`case_id`),
+  UNIQUE KEY `uq_case_image_type` (`case_id`, `image_type`),
   CONSTRAINT `fk_case_image_case` FOREIGN KEY (`case_id`) REFERENCES `medical_case` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

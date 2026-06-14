@@ -102,33 +102,17 @@
                                           },
                                           {
                                               "path":  "result/result",
-                                              "style":  {
-                                                            "navigationBarTitleText":  "检测结果"
-                                                        }
+                                                "style":  {
+                                                              "navigationBarTitleText":  "检测结果",
+                                                              "navigationStyle":  "custom",
+                                                              "navigationBarTextStyle":  "white"
+                                                          }
                                           }
                                       ]
                         },
                         {
                             "root":  "pages/my/sub",
                             "pages":  [
-                                          {
-                                              "path":  "history",
-                                              "style":  {
-                                                            "navigationBarTitleText":  "历史报告"
-                                                        }
-                                          },
-                                          {
-                                              "path":  "report",
-                                              "style":  {
-                                                            "navigationBarTitleText":  "我的报告"
-                                                        }
-                                          },
-                                          {
-                                              "path":  "family",
-                                              "style":  {
-                                                            "navigationBarTitleText":  "我的家人"
-                                                        }
-                                          },
                                           {
                                               "path":  "reportDetail/reportDetail",
                                               "style":  {

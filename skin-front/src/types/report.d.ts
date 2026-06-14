@@ -31,7 +31,12 @@ export type APIReport = {
   other: string
   checkTime: string
   imageUrl: string
+  heatmapUrl?: string
+  heatmapBase64?: string
   diseaseType: string
+  diseaseIndex?: number
+  confidence?: number
+  modelVersion?: string
   value: string
   advice: string
   introduction: string

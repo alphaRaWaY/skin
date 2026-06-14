@@ -1,6 +1,8 @@
 {
-  "vit_checkpoint": "src/weights/checkpoint-stage2-46.pth",
-  "best_model": "src/weights/best_model.pt",
-  "mapping": "src/data/disease_concept_mapping_final_v2.json"
+  "model_type": "xiangya_12class",
+  "model1": "weights/xiangya_model_primary.pt",
+  "model2": "weights/xiangya_model_secondary.pt",
+  "dataset_config": "config/xiangya_12class.json",
+  "backbone": "weights/panderm_backbone.pth",
+  "device": "cuda"
 }
-

@@ -7,7 +7,7 @@ import { getDashboardSummary } from '@/services/dashboardService'
 const auth = useAuthorizationStore()
 
 const doctorName = computed(() => auth.profile.nickname || auth.profile.username || 'XXX医生')
-const avatarRenderUrl = ref('/static/design/设计素材/医生头像.png')
+const avatarRenderUrl = ref('/static/runtime/doctor-avatar.png')
 const avatarUrl = computed(() => avatarRenderUrl.value)
 const deptText = computed(() => (auth.profile.mobile ? `手机号：${auth.profile.mobile}` : '手机号：'))
 const titleText = computed(() => (auth.profile.jobNumber ? `医工号：${auth.profile.jobNumber}` : '医工号：'))
@@ -16,7 +16,7 @@ const todayDiagnosed = ref(0)
 const resolveAvatar = async () => {
   const raw = auth.profile.avatar || ''
   if (!raw) {
-    avatarRenderUrl.value = '/static/design/设计素材/医生头像.png'
+    avatarRenderUrl.value = '/static/runtime/doctor-avatar.png'
     return
   }
   if (raw.startsWith('http://') || raw.startsWith('https://')) {
@@ -25,9 +25,9 @@ const resolveAvatar = async () => {
   }
   try {
     const res = await getOssImageUrl(raw)
-    avatarRenderUrl.value = res.code === 0 && res.result ? res.result : '/static/design/设计素材/医生头像.png'
+    avatarRenderUrl.value = res.code === 0 && res.result ? res.result : '/static/runtime/doctor-avatar.png'
   } catch {
-    avatarRenderUrl.value = '/static/design/设计素材/医生头像.png'
+    avatarRenderUrl.value = '/static/runtime/doctor-avatar.png'
   }
 }
 
@@ -123,19 +123,19 @@ const editProfile = () => {
     <view class="section-title">诊疗数据</view>
     <view class="grid">
       <view class="grid-item" @tap="goNewDiagnosis">
-        <image class="grid-icon" src="/static/design/设计素材/诊疗数据“新建皮肤镜诊断”图标.png" mode="aspectFit" />
+        <image class="grid-icon" src="/static/runtime/new-diagnosis.png" mode="aspectFit" />
         <text>新建皮肤镜诊断</text>
       </view>
       <view class="grid-item" @tap="goPendingCases">
-        <image class="grid-icon" src="/static/design/设计素材/诊疗数据“待处理病例”图标.png" mode="aspectFit" />
+        <image class="grid-icon" src="/static/runtime/pending-case.png" mode="aspectFit" />
         <text>查看待处理病例</text>
       </view>
       <view class="grid-item" @tap="goHistoryCases">
-        <image class="grid-icon" src="/static/design/设计素材/诊疗数据“历史病例”图标.png" mode="aspectFit" />
+        <image class="grid-icon" src="/static/runtime/history-case.png" mode="aspectFit" />
         <text>历史病例</text>
       </view>
       <view class="grid-item" @tap="goFollowupCases">
-        <image class="grid-icon" src="/static/design/设计素材/诊疗数据“待复查病例”图标.png" mode="aspectFit" />
+        <image class="grid-icon" src="/static/runtime/followup-case.png" mode="aspectFit" />
         <text>待复查病例</text>
       </view>
     </view>

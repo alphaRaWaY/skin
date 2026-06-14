@@ -25,5 +25,6 @@ public class MedicalCase {
 
     // joined field
     private String patientName;
+    private String imageUrl;
+    private String heatmapUrl;
 }
-

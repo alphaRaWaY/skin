@@ -22,10 +22,15 @@ export const useReportStore = defineStore('report', () => {
     checkTime: ''
   })
 
-  const imageUrl = ref('/static/images/sample.jpg')
+  const imageUrl = ref('')
+  const heatmapUrl = ref('')
+  const heatmapBase64 = ref('')
 
   const resultValue = ref({
     diseaseType: '',
+    diseaseIndex: undefined as number | undefined,
+    confidence: undefined as number | undefined,
+    modelVersion: '',
     value: '',
     advice: '',
     introduction: '',
@@ -43,8 +48,13 @@ export const useReportStore = defineStore('report', () => {
 
   const setResult = (result: APIReport | null | undefined) => {
     if (!result) {
+      heatmapUrl.value = ''
+      heatmapBase64.value = ''
       resultValue.value = {
         diseaseType: '',
+        diseaseIndex: undefined,
+        confidence: undefined,
+        modelVersion: '',
         value: '',
         advice: '',
         introduction: '',
@@ -54,15 +64,29 @@ export const useReportStore = defineStore('report', () => {
     }
     resultValue.value.advice = result.advice
     resultValue.value.diseaseType = result.diseaseType
+    resultValue.value.diseaseIndex = result.diseaseIndex
+    resultValue.value.confidence = result.confidence
+    resultValue.value.modelVersion = result.modelVersion || ''
     resultValue.value.introduction = result.introduction
     resultValue.value.value = result.value
     resultValue.value.conceptScores = result.conceptScores || []
+    heatmapBase64.value = result.heatmapBase64 || ''
+    heatmapUrl.value = result.heatmapUrl || ''
+  }
+
+  const setHeatmapUrl = (url: string) => {
+    heatmapUrl.value = url
   }
 
   const reset = () => {
-    imageUrl.value = '/static/images/sample.jpg'
+    imageUrl.value = ''
+    heatmapUrl.value = ''
+    heatmapBase64.value = ''
     resultValue.value = {
       diseaseType: '',
+      diseaseIndex: undefined,
+      confidence: undefined,
+      modelVersion: '',
       value: '',
       advice: '',
       introduction: '',
@@ -85,6 +109,7 @@ export const useReportStore = defineStore('report', () => {
       id: 0,
       ...form.value,
       imageUrl: imageUrl.value,
+      heatmapUrl: heatmapUrl.value,
       ...resultValue.value
     }
   }
@@ -92,9 +117,12 @@ export const useReportStore = defineStore('report', () => {
   return {
     form,
     imageUrl,
+    heatmapUrl,
+    heatmapBase64,
     resultValue,
     setForm,
     setImageUrl,
+    setHeatmapUrl,
     reset,
     getReport,
     setResult

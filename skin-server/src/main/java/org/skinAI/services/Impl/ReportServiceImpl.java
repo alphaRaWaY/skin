@@ -10,6 +10,7 @@ import org.skinAI.services.OssService;
 import org.skinAI.services.ReportService;
 import org.skinAI.utils.ThreadLocalUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -49,6 +50,7 @@ public class ReportServiceImpl implements ReportService {
     }
 
     @Override
+    @Transactional
     public int addReport(Report report) {
         Long doctorId = currentDoctorId();
         Patient patient = findOrCreatePatient(report, doctorId);
@@ -76,10 +78,10 @@ public class ReportServiceImpl implements ReportService {
 
         caseAnalysisMapper.insert(
                 medicalCase.getId(),
-                null,
+                report.getDiseaseIndex(),
                 report.getDiseaseType(),
-                inferConfidence(conceptScores),
-                "skin-model-v1",
+                report.getConfidence() == null ? inferConfidence(conceptScores) : report.getConfidence(),
+                report.getModelVersion() == null ? "skin-model-v1" : report.getModelVersion(),
                 toTopkIndicesJson(conceptScores),
                 toTopkScoresJson(conceptScores),
                 null
@@ -94,7 +96,8 @@ public class ReportServiceImpl implements ReportService {
             }
         }
 
-        persistCaseImage(medicalCase.getId(), report.getImageUrl());
+        persistCaseImage(medicalCase.getId(), report.getImageUrl(), "ORIGINAL", true);
+        persistCaseImage(medicalCase.getId(), report.getHeatmapUrl(), "HEATMAP", false);
         report.setId(medicalCase.getId());
         return 1;
     }
@@ -106,12 +109,17 @@ public class ReportServiceImpl implements ReportService {
         if (medicalCase == null) {
             return 0;
         }
-        CaseImage image = caseImageMapper.selectPrimaryByCaseId(id);
+        List<CaseImage> images = caseImageMapper.selectByCaseId(id);
         int affected = medicalCaseMapper.deleteById(id, doctorId);
-        if (affected > 0 && image != null && image.getObjectKey() != null && !image.getObjectKey().isBlank()) {
-            try {
-                ossService.deleteFile(image.getObjectKey());
-            } catch (Exception ignored) {
+        if (affected > 0) {
+            for (CaseImage image : images) {
+                if (image.getObjectKey() == null || image.getObjectKey().isBlank()) {
+                    continue;
+                }
+                try {
+                    ossService.deleteFile(image.getObjectKey());
+                } catch (Exception ignored) {
+                }
             }
         }
         return affected;
@@ -161,22 +169,34 @@ public class ReportServiceImpl implements ReportService {
         report.setConceptScores(conceptScores);
         report.setValue(toTopkScoresCsv(conceptScores));
 
-        CaseImage image = caseImageMapper.selectPrimaryByCaseId(medicalCase.getId());
-        if (image != null) {
-            report.setImageUrl(image.getObjectKey() != null && !image.getObjectKey().isBlank()
-                    ? image.getObjectKey()
-                    : image.getPublicUrl());
+        report.setImageUrl(resolveStoredImage(medicalCase.getId(), "ORIGINAL"));
+        report.setHeatmapUrl(resolveStoredImage(medicalCase.getId(), "HEATMAP"));
+        Map<String, Object> analysis = caseAnalysisMapper.selectLatestByCaseId(medicalCase.getId());
+        if (analysis != null) {
+            report.setDiseaseIndex(numberAsInteger(analysis.get("diseaseIndex")));
+            report.setConfidence(numberAsDouble(analysis.get("confidence")));
+            Object modelVersion = analysis.get("modelVersion");
+            report.setModelVersion(modelVersion == null ? null : String.valueOf(modelVersion));
         }
         return report;
     }
 
-    private void persistCaseImage(Long caseId, String imageUrl) {
+    private Integer numberAsInteger(Object value) {
+        return value instanceof Number number ? number.intValue() : null;
+    }
+
+    private Double numberAsDouble(Object value) {
+        return value instanceof Number number ? number.doubleValue() : null;
+    }
+
+    private void persistCaseImage(Long caseId, String imageUrl, String imageType, boolean primary) {
         if (imageUrl == null || imageUrl.isBlank()) {
             return;
         }
         CaseImage image = new CaseImage();
         image.setCaseId(caseId);
-        image.setPrimary(true);
+        image.setImageType(imageType);
+        image.setPrimary(primary);
 
         if (isRemoteUrl(imageUrl)) {
             image.setObjectKey(ossService.normalizeObjectKey(imageUrl));
@@ -189,6 +209,19 @@ public class ReportServiceImpl implements ReportService {
             image.setPublicUrl(imageUrl);
         }
         caseImageMapper.insert(image);
+    }
+
+    private String resolveStoredImage(Long caseId, String imageType) {
+        CaseImage image = caseImageMapper.selectByCaseIdAndType(caseId, imageType);
+        if (image == null && "ORIGINAL".equals(imageType)) {
+            image = caseImageMapper.selectPrimaryByCaseId(caseId);
+        }
+        if (image == null) {
+            return null;
+        }
+        return image.getObjectKey() != null && !image.getObjectKey().isBlank()
+                ? image.getObjectKey()
+                : image.getPublicUrl();
     }
 
     private boolean isRemoteUrl(String value) {

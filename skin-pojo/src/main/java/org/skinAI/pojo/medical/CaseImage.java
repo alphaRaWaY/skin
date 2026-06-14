@@ -10,6 +10,7 @@ public class CaseImage {
     private Long caseId;
     private String objectKey;
     private String publicUrl;
+    private String imageType;
     private Boolean primary;
     private LocalDateTime createdAt;
 }

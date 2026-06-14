@@ -13,7 +13,7 @@ import {
 
 const authStore = useAuthorizationStore()
 const loading = ref(false)
-const avatarPreview = ref('/static/design/设计素材/医生头像.png')
+const avatarPreview = ref('/static/runtime/doctor-avatar.png')
 const profile = ref({
   username: '',
   nickname: '',
@@ -45,7 +45,7 @@ const syncStoreProfile = () => {
 const refreshAvatarPreview = async () => {
   const avatar = profile.value.avatar || ''
   if (!avatar) {
-    avatarPreview.value = '/static/design/设计素材/医生头像.png'
+    avatarPreview.value = '/static/runtime/doctor-avatar.png'
     return
   }
   if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
@@ -54,9 +54,9 @@ const refreshAvatarPreview = async () => {
   }
   try {
     const res = await getOssImageUrl(avatar)
-    avatarPreview.value = res.code === 0 && res.result ? res.result : '/static/design/设计素材/医生头像.png'
+    avatarPreview.value = res.code === 0 && res.result ? res.result : '/static/runtime/doctor-avatar.png'
   } catch {
-    avatarPreview.value = '/static/design/设计素材/医生头像.png'
+    avatarPreview.value = '/static/runtime/doctor-avatar.png'
   }
 }
 

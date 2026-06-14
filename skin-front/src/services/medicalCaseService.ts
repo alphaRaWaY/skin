@@ -18,6 +18,8 @@ export interface MedicalCaseItem {
   checkTime: string
   createdAt: string
   updatedAt?: string
+  imageUrl?: string
+  heatmapUrl?: string
 }
 
 export const getMedicalCases = (params?: {

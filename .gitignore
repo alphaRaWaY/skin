@@ -39,6 +39,7 @@ node_modules/
 dist/
 manifest.json
 skin-front/.env.dev
+skin-front/assets-archive/
 
 # ===== Python =====
 __pycache__/
@@ -47,9 +48,8 @@ __pycache__/
 cache/
 *.pth
 *.pt
-skin-model/src/data/*.json
-skin-model/src/data/example.jpg
 skin-model/config/model-config.json
+data.json
 
 # ===== Project docs / agent files =====
 AGENTS.md

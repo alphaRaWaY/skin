@@ -1,10 +1,13 @@
 package org.skinAI.services.Impl;
 
 import org.skinAI.mapper.CaseFollowupMapper;
+import org.skinAI.mapper.CaseImageMapper;
 import org.skinAI.mapper.MedicalCaseMapper;
 import org.skinAI.pojo.medical.CaseFollowup;
+import org.skinAI.pojo.medical.CaseImage;
 import org.skinAI.pojo.medical.MedicalCase;
 import org.skinAI.services.MedicalCaseService;
+import org.skinAI.services.OssService;
 import org.skinAI.utils.ThreadLocalUtil;
 import org.springframework.stereotype.Service;
 
@@ -19,10 +22,19 @@ public class MedicalCaseServiceImpl implements MedicalCaseService {
 
     private final MedicalCaseMapper medicalCaseMapper;
     private final CaseFollowupMapper caseFollowupMapper;
+    private final CaseImageMapper caseImageMapper;
+    private final OssService ossService;
 
-    public MedicalCaseServiceImpl(MedicalCaseMapper medicalCaseMapper, CaseFollowupMapper caseFollowupMapper) {
+    public MedicalCaseServiceImpl(
+            MedicalCaseMapper medicalCaseMapper,
+            CaseFollowupMapper caseFollowupMapper,
+            CaseImageMapper caseImageMapper,
+            OssService ossService
+    ) {
         this.medicalCaseMapper = medicalCaseMapper;
         this.caseFollowupMapper = caseFollowupMapper;
+        this.caseImageMapper = caseImageMapper;
+        this.ossService = ossService;
     }
 
     @Override
@@ -50,12 +62,36 @@ public class MedicalCaseServiceImpl implements MedicalCaseService {
 
     @Override
     public int deleteById(Long id) {
-        return medicalCaseMapper.deleteById(id, currentDoctorId());
+        Long doctorId = currentDoctorId();
+        MedicalCase medicalCase = medicalCaseMapper.selectById(id, doctorId);
+        if (medicalCase == null) {
+            return 0;
+        }
+        List<CaseImage> images = caseImageMapper.selectByCaseId(id);
+        int affected = medicalCaseMapper.deleteById(id, doctorId);
+        if (affected > 0) {
+            for (CaseImage image : images) {
+                if (image.getObjectKey() == null || image.getObjectKey().isBlank()) {
+                    continue;
+                }
+                try {
+                    ossService.deleteFile(image.getObjectKey());
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return affected;
     }
 
     @Override
     public MedicalCase getById(Long id) {
-        return medicalCaseMapper.selectById(id, currentDoctorId());
+        MedicalCase medicalCase = medicalCaseMapper.selectById(id, currentDoctorId());
+        if (medicalCase == null) {
+            return null;
+        }
+        medicalCase.setImageUrl(resolveImageKey(id, "ORIGINAL"));
+        medicalCase.setHeatmapUrl(resolveImageKey(id, "HEATMAP"));
+        return medicalCase;
     }
 
     @Override
@@ -91,6 +127,19 @@ public class MedicalCaseServiceImpl implements MedicalCaseService {
         if (medicalCase == null) {
             throw new RuntimeException("case not found");
         }
+    }
+
+    private String resolveImageKey(Long caseId, String imageType) {
+        CaseImage image = caseImageMapper.selectByCaseIdAndType(caseId, imageType);
+        if (image == null && "ORIGINAL".equals(imageType)) {
+            image = caseImageMapper.selectPrimaryByCaseId(caseId);
+        }
+        if (image == null) {
+            return null;
+        }
+        return image.getObjectKey() != null && !image.getObjectKey().isBlank()
+                ? image.getObjectKey()
+                : image.getPublicUrl();
     }
 
     private Long currentDoctorId() {
