@@ -12,8 +12,8 @@ services:
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
-    ports:
-      - "3306:3306"
+    expose:
+      - "3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ../../script.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
@@ -26,8 +26,8 @@ services:
   redis:
     image: docker.m.daocloud.io/library/redis:7-alpine
     container_name: skin-redis
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     volumes:
       - redis_data:/data
     healthcheck:
