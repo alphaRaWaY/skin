@@ -201,6 +201,16 @@ spec:
                 secretKeyRef:
                   name: skinai-secret
                   key: OSS_REGION
+            - name: OSS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: OSS_ACCESS_KEY_ID
+            - name: OSS_ACCESS_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: skinai-secret
+                  key: OSS_ACCESS_KEY_SECRET
 ---
 apiVersion: v1
 kind: Service
