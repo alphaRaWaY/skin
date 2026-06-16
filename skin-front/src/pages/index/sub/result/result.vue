@@ -19,6 +19,8 @@ const isLocalPath = (value: string) => {
     value.startsWith('wxfile://') ||
     value.startsWith('http://tmp/') ||
     value.startsWith('https://tmp/') ||
+    value.startsWith('http://usr/') ||
+    value.startsWith('https://usr/') ||
     value.startsWith('file://') ||
     value.startsWith('/')
   )
@@ -124,11 +126,12 @@ const saveReport = async () => {
       uploadedKeys.push(heatmapUrl)
     }
 
+    const useHeatmapBase64Fallback = !!report.heatmapBase64 && (!heatmapUrl || isLocalPath(heatmapUrl))
     const response = await postReport({
       ...data,
       imageUrl,
-      heatmapUrl,
-      heatmapBase64: undefined,
+      heatmapUrl: useHeatmapBase64Fallback ? '' : heatmapUrl,
+      heatmapBase64: useHeatmapBase64Fallback ? report.heatmapBase64 : undefined,
       checkTime: convertToISOTime(data.checkTime),
     })
     if (!response || response.code !== 0) {

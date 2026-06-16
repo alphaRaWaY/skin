@@ -126,7 +126,7 @@ onMounted(fetchDetail)
           </view>
           <view class="image-item">
             <view class="image-frame">
-              <image v-if="heatmapImage" :src="heatmapImage" mode="aspectFit" />
+              <image v-if="heatmapImage" :src="heatmapImage" mode="aspectFit" @error="heatmapImage = ''" />
               <text v-else>暂无热力图</text>
             </view>
             <text>混合热力图</text>

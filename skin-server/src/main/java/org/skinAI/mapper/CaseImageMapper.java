@@ -16,7 +16,7 @@ public interface CaseImageMapper {
     @Select("""
         SELECT id, case_id AS caseId, object_key AS objectKey, public_url AS publicUrl,
                image_type AS imageType,
-               CASE WHEN is_primary = 1 THEN TRUE ELSE FALSE END AS primary,
+               CASE WHEN is_primary = 1 THEN TRUE ELSE FALSE END AS `primary`,
                created_at AS createdAt
         FROM case_image
         WHERE case_id = #{caseId}
@@ -28,7 +28,7 @@ public interface CaseImageMapper {
     @Select("""
         SELECT id, case_id AS caseId, object_key AS objectKey, public_url AS publicUrl,
                image_type AS imageType,
-               CASE WHEN is_primary = 1 THEN TRUE ELSE FALSE END AS primary,
+               CASE WHEN is_primary = 1 THEN TRUE ELSE FALSE END AS `primary`,
                created_at AS createdAt
         FROM case_image
         WHERE case_id = #{caseId} AND image_type = #{imageType}
@@ -43,7 +43,7 @@ public interface CaseImageMapper {
     @Select("""
         SELECT id, case_id AS caseId, object_key AS objectKey, public_url AS publicUrl,
                image_type AS imageType,
-               CASE WHEN is_primary = 1 THEN TRUE ELSE FALSE END AS primary,
+               CASE WHEN is_primary = 1 THEN TRUE ELSE FALSE END AS `primary`,
                created_at AS createdAt
         FROM case_image
         WHERE case_id = #{caseId}

@@ -12,11 +12,14 @@ import org.skinAI.utils.ThreadLocalUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -97,7 +100,7 @@ public class ReportServiceImpl implements ReportService {
         }
 
         persistCaseImage(medicalCase.getId(), report.getImageUrl(), "ORIGINAL", true);
-        persistCaseImage(medicalCase.getId(), report.getHeatmapUrl(), "HEATMAP", false);
+        persistCaseImage(medicalCase.getId(), resolveHeatmapImage(report), "HEATMAP", false);
         report.setId(medicalCase.getId());
         return 1;
     }
@@ -224,8 +227,41 @@ public class ReportServiceImpl implements ReportService {
                 : image.getPublicUrl();
     }
 
+    private String resolveHeatmapImage(Report report) {
+        if (report.getHeatmapUrl() != null
+                && !report.getHeatmapUrl().isBlank()
+                && !isClientLocalPath(report.getHeatmapUrl())) {
+            return report.getHeatmapUrl();
+        }
+        if (report.getHeatmapBase64() == null || report.getHeatmapBase64().isBlank()) {
+            return null;
+        }
+        try {
+            String payload = report.getHeatmapBase64().trim();
+            int commaIndex = payload.indexOf(',');
+            if (payload.startsWith("data:") && commaIndex >= 0) {
+                payload = payload.substring(commaIndex + 1);
+            }
+            byte[] bytes = Base64.getDecoder().decode(payload);
+            String objectKey = "skinAI/" + UUID.randomUUID() + ".png";
+            return ossService.uploadFile(objectKey, new ByteArrayInputStream(bytes));
+        } catch (Exception ex) {
+            throw new RuntimeException("failed to persist heatmap image", ex);
+        }
+    }
+
     private boolean isRemoteUrl(String value) {
         return value.startsWith("http://") || value.startsWith("https://");
+    }
+
+    private boolean isClientLocalPath(String value) {
+        return value.startsWith("wxfile://")
+                || value.startsWith("http://tmp/")
+                || value.startsWith("https://tmp/")
+                || value.startsWith("http://usr/")
+                || value.startsWith("https://usr/")
+                || value.startsWith("file://")
+                || value.startsWith("/");
     }
 
     private boolean looksLikeObjectKey(String value) {
